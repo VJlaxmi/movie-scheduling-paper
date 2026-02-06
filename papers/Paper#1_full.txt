@@ -1,0 +1,891 @@
+Research Article
+Research on the Scheduling Problem of Movie Scenes
+Yulian Liu,1 Qiuji Sun ,1 Xiaotian Zhang,1,2 and Yiwei Wu 1
+/one.fittedSchoolofManagement,Shanghai University,Shanghai, China
+/two.fittedOulu Business School, University of Oulu, Finland
+CorrespondenceshouldbeaddressedtoYiweiWu;wyw0044@shu.edu.cn
+Received 28 November 2018; Accepted 10 January 2019; Published 3 February 2019
+Gue
+stEditor:XinchangWang
+Copyright © 2019 Yulian Liu et al. This is an open access article distributed under the Creative Commons Attribution License,
+whichpermitsunrestricteduse,distribution,andreproductio ninanymedium,providedtheoriginalworkisproperlycited.
+Theschedulingproblemofmoviescenesreferstothereasonableorderingoftheshootingsequenceofthescene,therebyminimizing
+thetotalcostofthemoviescenes.Thispaperconsidersthefactorsaffectingthecostofmoviescenesshootingintherealworldand
+constructs an integer linear programming model. A tabu search based method (TSBM) and a particle swarm optimization based
+method (PSOBM) are designed to solve larger-scale problems. Numerical experiments show that both TSBM and PSOBM are
+suitableforsolvingsmall-scalemoviescenesschedulingproblem.Moreover,throughthecomparisonexperimentsbetweenTSBM
+andPSOBM,itisverifiedthattheTSBMcaneffectivelysolvethelarge-scalemoviescenesschedulingproblem.
+1. Introduction
+In the real world, the sequence of movie scenes shoot is not
+the final sequence. Therefore, we do this research in order
+to find the optimal sequence. The movie scenes scheduling
+problem can be described as follows. Let S={ s
+1,s2,...,s n}
+represent a set of𝑛scenes and A={ a1,a2,...,a m}denote a
+setof 𝑚actors. Let D={ d1,d2,...,d n}showthedurationof
+𝑛scenes and P={ p1,p2,...,p m}mean the wage of𝑚actors
+in one day. The actor shot from the first scene belongs to his
+lastscene.Meanwhile,theactorsareinthecrew.Duringthis
+period, the actor will be paid every day. Even in some days,
+they may not be shot. The movie scenes scheduling problem
+is how to reduce the transfer cost in consideration of actors
+withdifferentwagessoastominimizethetotalcost.
+The movie scenes scheduling problem is a multifactor
+optimization problem. Most literatures study the scheduling
+problematthesamelocation,takingnoaccountoftheimpact
+of different locations on the sequence of the scene. It is very
+likely that the transfer cost of the scene location will be
+generated. In this paper, the location of the movie scenes is
+considered. In addition, this paper also considers different
+wageofactorsanddifferentscenesshootingdurationinorder
+toconstructanintegerlinearprogrammingmodel.Then,this
+paper designs a tabu search based method (TSBM) and a
+particleswarmoptimizationbasedmethod(PSOBM)tosolve
+large-scale problems, comparing them through a series of
+numericalexperiments.
+The remainder of this paper is organized as follows.
+Section2 is related works. In Section3, we build an inte-
+ger programming model for the movie scenes scheduling
+problem. Then, we establish a TSBM in Section4. Section5
+develops a PSOBM to handle the movie scenes scheduling
+problem. The experiment results and settings are shown in
+Sectio n6.I nSectio n7weco ncl udethewholepa per .
+2. Related Works
+During the movie scenes shooting process, many factors
+affect the order in which movie scenes are shot, such as the
+cost of the actors, the duration of the scenes shot, and the
+duration of the actors. In addition, cost control is one of the
+issues that must be considered. Optimizing the sequence of
+scenes in the movie scenes shooting process, reducing the
+waiting time for the actors, and minimizing the total cost of
+thecrewaretheoverallgoals.
+The movie scenes scheduling problem was proposed by
+Chengetal.[1].Consideringthedifferentdailywageofactors,
+the shooting duration of each scene was the same value. A
+joint model was proposed to minimize the waiting time of
+actors as well as the total minimized costs. And they used
+the branch and bound algorithm and heuristic algorithm
+Hindawi
+Discrete Dynamics in Nature and Society
+Volume 2019, Article ID 3737105, 8 pages
+https://doi.org/10.1155/2019/3737105
+2 DiscreteDynamicsinNatureandSociety
+to solve large-scale problems. Nordstr¨om and Tufekci [2]
+applied hybrid genetic algorithm to solve the problem of
+movie scenes scheduling based on the research of Cheng
+et al. [1] and verified that the proposed algorithm is better
+than the heuristic algorithm of Cheng et al. [1]. Fink and
+Voß [3] solved the movie scenes scheduling problem as a
+special application of the general pattern ordering problem
+and used simulated annealingalgorithmand TS to solve this
+problem.BomsdorfandDerigs[4]putforwardaconceptual
+model to solve the scheduling problem in the movie scenes
+shooting process and used a heuristic algorithm to generate
+af e a s i b l es c h e m e .F i n a l l y ,ad e c i s i o ns u p p o r ts y s t e mi sp r o -
+posedandtheeffectivenessofthedecisionsupportsystem is
+proved.
+Somescholarsassumedthateachsceneshootingduration
+is different, and different actors have different daily wages.
+de la Banda et al. [5] described the scheduling problem. In
+their study, actor’s daily wage was different. And scenes may
+have different durations. They proposed the basic dynamic
+programming algorithm, through the preprocessing, search
+limits, to determine the upper and lower bound to improve
+the algorithm. Preprocessing mainly includes two simplified
+methods. On the one hand, referring to the same actors in
+the two scenes, you can combine the two scenes shooting
+duration and reduce the calculation. On the other hand, if
+anyactorappearsinonlyonescene,thenthecostoftheactor
+c a nb ec a l c u l a t e da safi x e dc o s t .K o c h e t o v[ 6 ]s t u d i e dt h e
+movie scenes scheduling problem in movie shooting of the
+column transformation problem that can be reconstructed
+into a binary matrix and solved it using the improved
+greedy algorithm and metaheuristic algorithm of iterative
+local search. Liang et al. [7] proposed a branch and bound
+algorithm to solve the movie scenes scheduling problem.
+They used a new lower bound function to delete redundant
+search nodes. Based on de la Banda et al. [5], Qin et al. [8]
+proposed an enhanced branch and bound algorithmto solve
+the movie scenes scheduling problem. They used an integer
+linearprogrammingmodelandbranchandboundalgorithm
+tosolvetheproblem.Bypreprocessing,double-endedsearch
+determines the lower bound, and cache search states and
+dominant rules enhance the branch and bound algorithm.
+The preprocessing is similar to that of de la Banda et al.
+[5]. Experiments results show that the improved branch and
+bound algorithm has better performance than the dynamic
+programming algorithm of de la Banda et al. [5]. Cheng et
+al.[9]presentedtwomethodstoimprovethelowerboundof
+the movie scenes scheduling problem. The result can give a
+partialtimetable.
+Most of studies consider the cost of the actor, neverthe-
+less, a small number of studies, not only consider the cost of
+theactor,butalsoconsidertheoperatingcostsofcrew.Wang
+etal.[10]studiedtheminimizationofmoviecosts,including
+the cost of the actors as well as the cost of operating the
+crew.Theyusedthenextfittingalgorithmandthefirstfitting
+reductionalgorithmtosolvethisproblem.
+Scheduling in movie shooting process is essentially a
+scheduling problem, which can draw lessons from the
+schedulingproblem.Therearealsomanystudiesthatresem-
+ble the scheduling problem in movie. For example, the
+problem of program rehearsal is optimized through rea-
+sonable scheduling, so as to reduce the waiting time and
+minimize the total cost. Therefore, we can learn from such
+research ideas and methods. Gregory et al. [11] solved
+the rehearsal scheduling problem by planning and model
+checking, setting the daily wage of actors differently, and
+the rehearsal duration of each program was determined.
+Sakulsom and Tharmmaphornphilas [12] proposed a two-
+s t a g em e t h o dt os o l v et h ep r o b l e mo fr e h e a r s a lo fm u s i c
+programs. They set the same actor daily wage, and the
+rehearsaldurationofeachprogramwasdetermined.
+From the above study, we can see that most scholars
+consider the cost of actors from the perspective of actors.
+They consider the cost of actors, including the daily wage of
+actorwhichisdifferent,andeachscenehasthesameshooting
+d u r a t i o n .A sw e l la st h ed a i l yw a g eo fa c t o ri sd i ff e r e n t ,e a c h
+scene shooting duration for different values. Some scholars
+not only consider the cost of actors, but also consider the
+operational costs of the crew. Few scholars consider the
+transfer cost between scenes. Different movie scenes may
+be taken at different locations, so there is a high potential
+for transfer costs between the scene and the scene transition
+duringmoviescenesshootingprocess.
+3. Model Formulation
+Aboveall,themoviescenesschedulingproblemisaschedul-
+ing problem. Zhen [13] studied the scheduling problem of
+tactical berth allocation problem. The first deterministic
+model established in the paper considers the certainty of the
+period. The research in this paper considers the certainty of
+the shooting duration. The model building process refers to
+the deterministic model in Zhen [13]. This paper establishes
+an integer programming model to solve the movie scenes
+schedulingproblemconsideringthedifferentwageofactors,
+different shooting duration of actors, and the transfer cost
+between scenes. The model mainly consists of two parts,
+one takes the cost of the actors into account, and the other
+considersthetransfercostbetweenscenes.
+Before formulating the model for the movie scenes
+scheduling problem, we list the notation used in the paper
+below.
+/three.fitted./one.fitted.Notations
+IndicesandSets
+𝑖,𝑗:Indexofscenes.
+𝑘:Indexofanactor.
+𝑚,𝑛:Indexofshootinglocations.
+𝐾: Set of all actors;𝑘∈𝐾 .
+𝐺:Setofallshootinglocations; 𝑚,𝑛 ∈ 𝐺.
+𝑆: Set of all scenes. Set two virtual scenes0and𝑇,i n
+which0indicates the scene where the crew begins to
+shoot and𝑇 indicates the scene the crew shot in the
+end.
+𝑖,𝑗 ∈ 𝑆; 𝑆
+0=𝑆∪{ 0 } ;𝑆𝑇= 𝑆∪{𝑇}; 𝑆=𝑆∪{ 0 ,𝑇 }.
+DiscreteDynamicsinNatureandSociety 3
+Parameters
+𝑝𝑘:Thedailywageofactor 𝑘.
+𝑠𝑖𝑘: Set to one if actor𝑘 appears in scene𝑖,a n dz e r o
+otherwise.
+𝑥𝑖𝑗𝑘: Set to one if actor𝑘appears in scene𝑖and scene
+𝑗,andzer oo therwise.
+𝑐
+𝑖𝑗:Thecosto fmo vingfr o mscene𝑖toscene 𝑗.
+𝑢𝑖:Thenumberofdaysrequiredtoshootscene 𝑖.
+DecisionVariables
+𝛿𝑖𝑗𝑘: Binary variable; it equals one if the actor𝑘 first
+appears in scene𝑖 and then appears in scene𝑗,a n d
+zero otherwise; note that it is not required that scene
+𝑖andscene 𝑗areadjacenttoeachother.
+𝛼𝑖𝑗𝑘: Binary variable; it equals one if the actor 𝑘
+appearsintwoadjacentscenes 𝑖and𝑗inwhichscene
+𝑗isthenextsceneofscene 𝑖,andzer oo therwise.
+𝛽𝑖𝑗𝑘:Integer;thetimeintervalofactor 𝑘playsbetween
+scene𝑖andscene 𝑗.Fortheactor 𝑘,itfirstappearedin
+thescene 𝑖,follo wedb ythescene𝑗.
+𝛾𝑖𝑗: Binary variable; it equals one if the scene𝑗is the
+nextsceneofscenes 𝑖,andzer ootherwise.
+𝜀𝑖:Integer;thetimethatscene 𝑖finishes.
+/three.fitted./two.fitted. Mathematical Model.
+Minimize ∑
+𝑖∈𝑆
+∑
+𝑗∈𝑆
+∑
+𝑘∈𝐾
+𝛽𝑖𝑗𝑘𝑝𝑘+ ∑
+𝑗∈𝑆
+∑
+𝑖∈𝑆
+𝛾𝑖𝑗𝑐𝑖𝑗 (1)
+∑
+𝑗∈𝑆T
+𝛾0𝑗=1 (2)
+∑
+𝑖∈𝑆0
+𝛾𝑖𝑇=1 (3)
+∑
+𝑗∈𝑆𝑇
+𝛾𝑖𝑗=1 ∀ 𝑖∈𝑆 ,𝑖 ̸=𝑗 (4)
+∑
+𝑗∈𝑆0
+𝛾𝑗𝑖=1 ∀ 𝑖∈𝑆 ,𝑖 ̸=𝑗 (5)
+𝛾𝑖𝑗+𝛾𝑗𝑖≤1 ∀ 𝑖∈ 𝑆, 𝑗 ∈𝑆 (6)
+𝜀𝑗−𝜀𝑖−𝑢𝑗≤𝑀( 1−𝛾𝑖𝑗)
+∀𝑖 ∈S0,𝑗∈𝑆 𝑇
+(7)
+∑
+𝑗∈𝑆
+𝛼0𝑗𝑘=1 ∀ 𝑘∈𝐾 (8)
+∑
+𝑗∈𝑆
+𝛼𝑗𝑇𝑘=1 ∀ 𝑘∈𝐾 (9)
+𝛿𝑖𝑗𝑘+𝛿𝑗𝑖𝑘=𝑥𝑖𝑗𝑘
+∀𝑖,𝑗 ∈𝑆, 𝑖 ̸ =j,∀ 𝑘∈𝐾
+(10)
+𝛼𝑖𝑗𝑘≤𝛿𝑖𝑗𝑘 ∀𝑘 ∈ 𝐾, ∀𝑖,𝑗 ∈𝑆 (11)
+𝑠𝑖𝑘≤ ∑
+𝑗∈𝑆𝑇
+𝛼𝑖𝑗𝑘 ∀𝑖 ∈ 𝑆0,∀ 𝑘∈𝐾 (12)
+𝑠𝑖𝑘≤ ∑
+𝑗∈𝑆0
+𝛼𝑗𝑖𝑘 ∀𝑖 ∈ 𝑆𝑇,∀ 𝑘∈𝐾 (13)
+𝜀𝑗−𝜀𝑖+𝑀(𝛼 𝑖𝑗𝑘−1)≤𝛽 𝑖𝑗𝑘
+∀𝑖,𝑗 ∈ 𝑆, 𝑖 ̸=𝑗 ,∀ 𝑘∈𝐾
+(14)
+𝑢𝑗+𝑀(𝛼 0𝑗𝑘−1)≤𝛽 0𝑗𝑘
+∀𝑗 ∈ 𝑆, ∀𝑘 ∈ 𝐾
+(15)
+𝑀(𝛼𝑗𝑇𝑘−1)≤𝛽 𝑗𝑇𝑘 ∀𝑗 ∈ 𝑆, ∀𝑘 ∈ 𝐾(16)
+𝑠𝑗𝑘−0.5 ≤ 0.5(∑
+𝑖∈𝑆
+𝛼𝑖𝑗𝑘+∑
+𝑖∈𝑆
+𝛼𝑗𝑖𝑘)≤𝑠 𝑗𝑘
+∀𝑗 ∈𝑆, 𝑖 ̸=𝑗 ,∀ 𝑘∈𝐾
+(17)
+𝑀(𝛿𝑖𝑗𝑘−1)≤𝜀 𝑗−𝜀𝑖
+∀𝑖 ∈S0,∀ 𝑗∈𝑆 𝑇,𝑖 ̸=𝑗 ,∀ 𝑘∈𝐾
+(18)
+𝜀𝑗−𝑢𝑗≤𝑀( 2−𝛼 0𝑗𝑘−𝛾𝑖𝑗)+𝜀 𝑖
+∀𝑖 ∈ 𝑆0,∀ 𝑗∈𝑆 𝑇,∀ 𝑘∈𝐾
+(19)
+𝜀𝑗−𝑢𝑗≤𝑀( 2−𝛼 𝑗𝑇𝑘−𝛾𝑖𝑗)+𝜀 𝑖
+∀𝑖 ∈ 𝑆0,∀ 𝑗∈𝑆 𝑇,∀ 𝑘∈𝐾
+(20)
+0≤𝜀 𝑗−𝜀𝑖−𝑢𝑗+𝑀(1−𝛼 𝑖𝑗𝑘)
+∀𝑖 ∈S0,∀ 𝑗∈𝑆 𝑇,∀ 𝑘∈𝐾
+(21)
+0≤𝜀 𝑖≤𝑑∀ 𝑖∈ 𝑆 (22)
+𝛽𝑖𝑗𝑘≥0 ∀ 𝑖 ,𝑗∈ 𝑆, ∀𝑘 ∈ 𝐾 (23)
+𝛿𝑖𝑗𝑘,𝛼𝑖𝑗𝑘,𝛾𝑖𝑗∈ {0,1} ∀i,j ∈ 𝑆, ∀𝑘 ∈ 𝐾 (24)
+Objective function (1) minimizes the total costs of the
+moviescenesschedulingproblem.Thetotalcostsincludethe
+wageofactorsandthetransfercostofscenes.Constraints(2)
+and (3) guarantee that each scene has a start point0and an
+endpoint 𝑇.Constraints(4)and(5)ensurethatthereisonly
+o n es c e n eb e f o r ea n da ft e re a c hs c e n e .C o n s t r a i n t( 6 )s t a t e s
+the priority relationship of scene𝑖 and scene𝑗. Constraint
+(7)linksthetwodecisionvariables 𝛾
+𝑖𝑗and𝜀𝑖.Constraints(8)
+and (9) ensure that each actor𝑘starts with scene0and ends
+with scene𝑇. Constraints (10) and (11) define the relation of
+𝛼𝑖𝑗𝑘,𝑥𝑖𝑗𝑘,and 𝛿𝑖𝑗𝑘.Constraints(12)and(13)guaranteethatfor
+actor 𝑘, each scene before and after there is only one scene.
+Constraints (14), (15), and (16) define𝛽𝑖𝑗𝑘. Constraint (17)
+ensuresthatactor 𝑘completestheshootingscenesaccording
+4 DiscreteDynamicsinNatureandSociety
+tothesequencedecidedby 𝛼𝑖𝑗𝑘.Constraint(18)linksthetwo
+decision variables𝛿𝑖𝑗𝑘and𝜀𝑖. Constraints (19), (20), and (21)
+link the two decision variables𝛼𝑖𝑗𝑘and 𝜀𝑖. Constraints (22),
+(23),and(24)definethedecisionvariable.
+Th ea b o v em o d e lc a nb es o l v e db yI L O GC P L E Xs o l v e r .
+However, ILOG CPLEX solver can only solve small-scale
+movie scenes scheduling problems. For some large-scale
+movie scenes scheduling problems, the ILOG CPLEX solver
+cannotsolveverywell.Therefore,thispaperproposesaTSBM
+tohandlethemoviescenesschedulingproblemsunderlarge-
+scalesituation.
+4. Tabu Search Based Method
+/four.fitted./one.fitted. Introduction to the Tabu Search.At present, many
+scholars have used tabu search (TS) algorithms to solve
+optimization problems. Xue et al. [15] studied the prob-
+lem of local container shipping under the new operating
+mode, defining that the tractor can be removed from its
+associated trailer and assigned to a new mission. Aiming
+at this problem, the TS is proposed, which uses numerical
+experiments to evaluate the performance of the algorithm
+and the advantages of the new operation mode. Shen [16]
+designed a TS with complex neighborhood structure for job
+shopproblemswithsequence-relatedsetuptime.Themethod
+of inserting is used to define the neighborhood function
+without a simple exchange. The test results show that the
+proposed TS is superior to other algorithms. Qin et al. [17]
+studied a multicycle inspector scheduling problem, which is
+anextensionofthemultistrokevehicleroutingproblemwith
+time windows, and then solved using the TS. In addition,
+a constrained backpack model is proposed, which can gen-
+erate an upper limit of the problem, thereby improving the
+efficiency of the solution. Peng et al. [18] combined the TS
+process into the path relinking framework to study a new
+algorithm to solve the job shop scheduling problem. The
+experimentalresultsshowthatthenewalgorithmhasagood
+effect on the solution quality and computational efficiency.
+Li and Alidaee [19] use the TS to solve the black and white
+traveling salesman problem. The improved TS is built on
+a new efficient neighborhood structure, which utilizes the
+arrangementofblackandwhitetravelingsalesmanproblems
+and the backpack function. Moreover, the TS is embedded
+as a heuristic process to improve the upper bound of the
+mixed integer linear programming equation. Li and Gao
+[20] use a hybrid algorithm of genetic algorithm and TS to
+solve the shop scheduling problem, in order to minimize
+the completion time. The genetic algorithm with powerful
+global search ability is used to explore the TS with good
+local search ability. The experimental results show that the
+hybridalgorithmhasgoodsearchabilityandcanbalancethe
+intensification and diversification. Shahvari and Logendran
+[21]improvedtheTSforabatchschedulingproblemonaset
+ofuncorrelatedparallelmachineswiththegoalofminimizing
+the linear combination of total weighted completion time
+and total weighted delay. Therefore, we design a TSBM to
+s o l v et h ei n t e g e rl i n e a rp r o g r a m m i n gm o d e l .W e ie ta l .[ 2 2 ]
+studiedthepartnerselectionproblemfromtheperspectiveof
+supplier network global optimization. The study established
+an optimal combination model of supplier selection to
+choosetherightsuppliersforimprovingtheefficiencyofthe
+supplychain.Adynamicprogramming-TSandanantcolony
+algorithmweredevelopedtosolvethemodel,respectively.
+TSisaglobalprogressiveoptimizationalgorithm.Factors
+affecting search performance in TS include initial solution,
+specialrules,neighborhoodstructure,tabulist,candidateset,
+andterminationrule.Fortheamnestyrules,ifthetargetvalue
+ofasolutionisbetterthananyofthebestcandidatesolutions,
+it can be special. And if all objects are contraindicated, then
+a solution with the smallest evaluation value is selected. It is
+possibletospecificallytargetobjectsthathavealargeimpact
+on the target value. For the size of the candidate set, the
+excessive calculation increases the computational memory
+andcomputationtimeandtoosmallwillcausethepremature
+fall into the local optimum. For termination criteria, it is
+to make the search terminate the search process in some
+cases. For the tabu list, it has a short-term memory function
+that prohibits searching for previously searched content. For
+the tabu length, the purpose is to prevent the search from
+appearing in an infinite loop. When other variables are
+unchanged, the shorter the tabu length, the less memory
+usage, and the larger the scope of the lifting, that is, the
+upperlimitofthesearchrange.Butitiseasytofallintolocal
+optimum earlier. If the length of the tabu is too long, it will
+betime-consuming.
+/four.fitted./two.fitted./T_heFrameofTabuSearch
+/four.fitted./two.fitted./one.fitted./T_heBasicFlowoftheTSBM.ThebasicflowoftheTSBM
+isasfollows.
+Step/one.fitted.Determineaninitialfeasiblesolutionanditsobjective
+function value. Set the tabu list to empty and set the length
+of the tabu list. Meanwhile, let the initial solution as the
+currentsolution 𝑥
+𝑛𝑜𝑤. In addition,define𝑛as the number of
+iterations.Set 𝑁=1 ,𝑛𝑜𝑤𝐿 = 0.
+Step /two.fitted.When 𝑛 reaches the maximum number of iterations
+𝑁, end the algorithm and output the optimal solution;
+otherwise,gotoStep3.
+Step /three.fitted.If 𝑛𝑜𝑤𝐿 < 𝐿, the neighborhood function that
+generates the current solution𝑥
+𝑛𝑜𝑤will generate a number
+ofneighborhoodsolutions,andgotoStep5;otherwise,goto
+Step4;
+Step /four.fitted.Use the diversification strategy to generate a new
+currentsolution 𝑥𝑛𝑜𝑤,andset𝑛𝑜𝑤𝐿 = 0,gotoStep3.
+Step /five.fitted.Sort the candidate solutions according to the fitness
+value,andjudgefromthecandidatesolutionwiththesmallest
+fitnessvalue.Ifitisnotinthetabulist,directlyreplaceitwith
+the current solution to become𝑥
+𝑛𝑜𝑤;i fi ti si nt h et a b ul i s t
+and meet the exemptioncriteria, let it as𝑥𝑛𝑜𝑤a n dg ot oS t e p
+7. Otherwise, go to Step 6.
+Step /six.fitted.If the candidate solution value is in the tabu list
+and does not meet the exemption criteria, certain courage
+criterion is given. If the candidate solution value satisfies the
+DiscreteDynamicsinNatureandSociety 5
+couragecriteria,itisalsoselectedasthecurrentsolution 𝑥𝑛𝑜𝑤.
+GotoStep7.
+Step /seven.fitted.Update the global optimal𝑥𝑏𝑒𝑠𝑡,a n dp u tt h ec u r r e n t
+solution into the tabu list. If the tabu list exceeds the set
+length, release the tabu element that firstly put into the tabu
+list.When 𝑥
+𝑏𝑒𝑠𝑡hasnotchanged, 𝑛𝑜𝑤𝐿 = 𝑛𝑜𝑤𝐿+1,𝑛=𝑛+1 ,
+gotoStep2.
+/four.fitted./two.fitted./two.fitted.InitialSolution.Theinitialsolutionhasgreatinfluence
+on the algorithm search performance because the TSBM is
+m a i n l yb a s e do nt h en e i g h b o r h o o ds e a r c h .Th e r e f o r e ,w e
+firstly consider generating a number of feasible solutions for
+CPLEX solver randomly and select the optimal fitness value
+ofthesolutionastheinitialsolution.
+Each 𝑥 represents one possible order of scene, i.e., the
+variable 𝛾
+𝑖𝑗is known. If 𝑥 is given, then we select the
+optimal fitness value of the solution as the initial solution.
+Forexample,ifthereare5scenes,elementsin 𝑥are1-4-5-3-2,
+whichmeanstheorderofsceneis1-4-5-3-2.
+/four.fitted./two.fitted./three.fitted. Neighborhood Structure.The neighborhood structure
+is critical in tabu search because it determines the form and
+number of neighborhood solutions of the current solution
+andtherelationshipbetweenthesolutions.
+The neighborhood is generated by 2-swap and 2-opt
+methods.The2-swapmethodistogenerateneighborhoodas
+explainedbelow.Onthebasisofthecurrentsolution 𝑥
+𝑛𝑜𝑤,the
+orderofthetwoscenesisrandomlyexchanged.Forexample,
+𝑥𝑛𝑜𝑤is 1-4-5-3-2, and we exchange first and third scene to
+get a neighborhood, i.e., 5-4-1-3-2. However, the method
+of generating the neighborhood using the 2-opt method is
+randomtwoscenesfor2-optexchange.And2-optmeansthat
+fromtheselectedstartingscenetotheendingscene,allscenes
+are reversed to generate new neighborhoods. For example,
+𝑥𝑛𝑜𝑤is 1-4-5-3-2, and the two random scenes are the second
+andfifthscenes,soanewneighborhoodis1-2-3-5-4.
+/four.fitted./two.fitted./four.fitted. Tabu List.The tabu list has a short-term memory
+function which prohibits the items that are searched before.
+TSBM uses tabu list to prevent the search process being
+caughtinthelocaloptimal.
+The neighborhood exchange method and the exchanges
+oftwopointswillbeaddedtothetabulist.Forexample, 𝑥
+𝑛𝑜𝑤
+is 1-4-5-3-2, and we exchange the first and the third scene to
+get a neighborhood, i.e., 5-4-1-3-2. Use the 2-swap method,
+andexchangethefirstandthethirdscene,thenadd1-1-3three
+numberstothetabulist.Besides,set 𝑥
+𝑛𝑜𝑤is1-4-5-3-2,andtwo
+randomscenesarethesecondandthefifthscenes,sothenew
+neighborhoodis1-2-3-5-4.Andweusethe2-optmethod,and
+the random number is 2 and 5, then add 2-2-5 to the tabu
+list. This shows that when determining whether a candidate
+solution is in the tabu list, you need to know which method
+isused,andwhichtwopointsshouldberandom.
+/four.fitted./two.fitted./five.fitted.DiversiﬁcationStrategy.Inordertoavoidthealgorithm
+gettingintolocaloptimumprematurely,adiversifiedstrategy
+isadoptedinthispaper.Iftheoptimalvaluedoesnotchange
+afteracertainnumberofiterations,wewilladoptadiversified
+strategy to regenerate the current solution and make the
+algorithm jump out of the local minimum. In addition, the
+method of generating the current solution is the same as
+thatofgeneratingtheinitialsolution,i.e.,itisgeneratedran-
+domly.
+5. Particle Swarm Optimization Based Method
+/five.fitted./one.fitted.IntroductiontothePSO.PSOisanewevolutionaryalgo-
+r i t h mp r o p o s e db yK e n n e d ya n dE b e r h a r t[ 2 3 ]t oo p t i m i z e
+continuous nonlinear functions. At present, PSO has been
+widely used to solve problems such as scheduling, com-
+binatorial optimization, and supply chain network design.
+Garg and Sharma [24] use PSO to solve system assignment
+problems. Many of these goals are system reliability and
+design costs. Above all, a fuzzy nonlinear programming
+modelisconstructed,andthentheparticleswarmoptimiza-
+tion algorithm is designed to solve the proposed problem.
+Hamta et al. [25] studied the assembly line balance problem
+of a single model. This considers the minimization of cycle
+time, total equipment cost, and smoothness index. A new
+method combining PSO and variable domain search is used
+to solve the proposed problem. Zhong et al. [26] use the
+PSO to solve the multiobjective hull assembly line balance
+problem. The goal is to minimize cycle time, multisite
+responsibility, and dynamic and static load balancing. In
+the particle swarm algorithm, the new method is used to
+encode the particles. Yao et al. [27] considered the carton
+heterogeneous vehicle routing problem at the collection
+station, constructed a mathematical model, and solved the
+model using the improved PSO. For improving the PSO,
+the local search is optimized in the algorithm. Experiments
+show that both the proposed model and the algorithm are
+f e a s i b l e .K h a t a m ie ta l .[ 2 8 ]c o n s t r u c t e daP S Of o rfl a m e
+detection, which enabled image detection techniques for
+flamedetection.PSOcandistinguishthedifferentcolors,and
+thecolorconversionmatrixcandetectdifferentcolorflames.
+Hu et al. [14] established a mixed integer programming
+model for the joint optimization of multibatch production
+andvehicleroutingproblemsinvolvingapickup.Atwo-stage
+hybrid heuristic algorithm is proposed to solve this model.
+The PSO was used in the second stage to allocate vehicles to
+eachproductionbatch.Theresultsofnumericalexperiments
+validatetheefficiencyoftheproposedalgorithm.
+PSO finds the best solution by simulating the process
+of bird flocking and sharing information between birds and
+b i r d s .E a c hp a r t i c l ec a nc h a n g ei t sp o s i t i o na n ds p e e d ,a n d
+the position of the particle is a viable solution in the search
+space.Thespeedoftheparticlesdeterminesthedirectionand
+distance of the flight of bird. Other particles will search for
+the direction of the current optimal particle. Each particle
+remembers,followsthecurrentoptimalparticle,andsearches
+in the solution space. But the process of each iteration is not
+completely random. If a better solution is found, it will be
+used as a basis to find the next solution to find the global
+optimalsolution.TheadvantageofPSOisthatthealgorithm
+is easy to implement and there are not many parameters to
+adjust.
+6 DiscreteDynamicsinNatureandSociety
+Table1:Theperformancesoftheproposedsolutionmethods.
+Caseid TSBM PSOBM CPLEX Gap Gap1
+S-A-P OBJ T TT (s) OBJ P TP (s) OBJ C TC (s)
+10-3-3-1 2960 14 3040 137 2960 8 0.00% 2.70%
+10-3-3-2 3440 21 3980 154 3440 13 0.00% 15.70%
+10-3-3-3 4440 7 4630 125 4440 22 0.00% 4.28%
+11-3-3-1 4600 42 5010 178 4600 97 0.00% 8.91%
+11-3-3-2 4810 7 5130 156 4810 104 0.00% 6.65%
+11-3-3-3 4410 43 4630 147 4410 115 0.00% 4.99%
+11-5-3-1 5700 14 5860 215 5690 48 0.20% 2.99%
+11-5-3-2 6890 46 6930 246 6890 165 0.00% 0.58%
+11-5-3-3 6710 21 7060 197 6710 170 0.40% 5.22%
+13-5-4-1 22230 57 26430 236 22130 1167 0.00% 19.43%
+13-5-4-2 32160 46 33790 318 31800 2850 1.00% 6.26%
+13-5-4-3 20180 26 23570 115 20080 6613 0.50% 17.38%
+15-5-4-1 36680 51 38800 53 N.A >7200 N.A N.A
+15-5-4-2 22320 74 31300 39 N.A >7200 N.A N.A
+15-5-4-3 32800 113 38430 137 N.A >7200 N.A N.A
+Avg. 0.18% 7.92%
+/five.fitted./two.fitted. /T_he Frame of Particle Swarm Optimization.The flow of
+thePSOBMisasfollows.
+Step/one.fitted.Settheinitialiterationnumber 𝐺=1 andthenumber
+of particles to𝐻. The position of the particle represents a
+feasible solution, and the velocity of the particle represents
+t h es e a r c hd i r e c t i o n .Th ep o s i t i o na n dv e l o c i t yo ft h ei n i t i a l
+particleswarmarerandomlygenerated.
+Step /two.fitted.Calcula tethefi tnessval ueo feachparticle.
+Step/three.fitted.Findtheindividualoptimalandglobaloptimalvalues
+of each particle. If it is better than the current individual
+extremum, it is updated; if the best of all the individual
+extremum of the particles is better than the current global
+optimal,theglobaloptimalisupdated.
+Step /four.fitted.Use the particle velocity and position formula to
+updatethevelocityandpositionoftheparticle.
+Step /five.fitted.If one of the two termination conditions is reached,
+the iteration is stopped and the optimal solution is output;
+otherwise,gotoStep2.
+Among the above steps, the two termination conditions
+in Step 5 are as follows. For the first, the number of
+iterations reaches the maximum number of iterations. And
+the global optimal value is no longer updated in the number
+ofiterations.
+6. Numerical Experiments
+/six.fitted./one.fitted. Experiment Settings.In this section, we apply the pro-
+posedmodelandmethodstosolvethemoviescenesschedul-
+ing problem. The movie scenes scheduling problem is a
+schedulingproblem.Thenumericalexperimentsinthispaper
+mainly refer to the experiments of Zhen [29] and Zhen et al.
+[30]toanalyzetheproposedmethodandmodel.
+The experimental cases in this paper are set as follows.
+For the cost𝑐
+𝑖𝑗transferred from scene𝑖 to scene𝑗,t h e ya r e
+randomlygeneratedwithintherange(0,10000).Moreover,it
+is necessary to satisfy c
+𝑖𝑗= c𝑗𝑖.F o rth epa ra m e t e r𝑞𝑘(i.e., the
+daily wage of actor𝑘), they are randomly generated within
+a range between 80 dollars/day and 1000 dollars/day. For the
+parameter 𝑠
+𝑖𝑘(i.e., set to one if the actor𝑘 appears in scene
+𝑖)a n d𝑥𝑖𝑗𝑘(i.e., set to one if the actor𝑘 appears in scene
+𝑖,s c e n e𝑗), they are mainly generated based on the actor𝑘.
+Numerical experiments are performed on a PC (Intel (R),
+3.4GHz; Memory, 128G). The models are implemented by
+t h eC P L E X 1 2 . 6 ,a n dt h em e t h o d sa r ec o d e db yC #( V i s u a l
+Studio 2015).
+/six.fitted./two.fitted. Performances of the Proposed Solution Methods.This
+p a p e rd e s i g n saT S B Ma n dP S O B Mt os o l v et h ep r o p o s e d
+integer linear programming model. Compare the perfor-
+mance of the proposed solution with the results obtained
+by directly using the CPLEX solver. Table1 shows the com-
+parison of the experimental results of TSBM, PSOBM, and
+CPLEX solvers under the same parameters. In the “Case id”
+column of Table1, the first three values represent the scene,
+t h ea c t o r ,a n dt h el o c a t i o n ,a n dt h ef o u r t hv a l u er e p r e s e n t s
+theindexofthedifferentcasesatthesamescale(scene,actor,
+andlocation).Thedifferencebetweenthethreecasesineach
+group size is mainly due to the difference in the length of
+the scene. In this paper,𝑂𝐵𝐽
+𝑇, 𝑂𝐵𝐽𝑃,a n d𝑂𝐵𝐽𝐶show the
+objective value of TSBM, PSOBM, and CPLEX. And𝐺𝑎𝑝 =
+(𝑂𝐵𝐽𝑇−𝑂𝐵𝐽𝐶)/𝑂𝐵𝐽𝐶,𝐺𝑎𝑝1 = (𝑂𝐵𝐽𝑃−𝑂𝐵𝐽𝐶)/𝑂𝐵𝐽𝐶.
+I tc a nb es e e nf r o mT a b l e1t h a tu n d e rt h es m a l l - s c a l e
+problems,theTSBMhasashortersolutiontimethanCPLEX,
+and the average difference rate is 0.18%. The PSOBM has
+a longer solution time, and the average difference rate is
+DiscreteDynamicsinNatureandSociety 7
+Table2:ComparisonbetweenTSBMandPSOBM.
+Caseid TSBM PSOBM Gap2
+S-A-P OBJT TT (s) OBJP TP (s)
+15-5-4-1 36680 51 38800 53 5.78%
+15-5-4-2 22320 74 31300 39 40.23%
+15-5-4-3 32800 113 38430 137 17.16%
+20-5-6-1 30320 122 46330 102 52.80%
+20-5-6-2 35260 127 53840 81 52.69%
+20-5-6-3 32090 214 47350 163 47.55%
+30-10-10-1 227730 677 341930 813 50.15%
+30-10-10-2 225000 616 380560 898 69.14%
+30-10-10-3 213140 654 241730 946 13.41%
+30-20-10-1 468200 1295 572380 1547 22.25%
+30-20-10-2 439530 1240 668980 1435 52.20%
+30-20-10-3 515170 1293 594190 1636 15.34%
+40-20-15-1 897070 2176 1092090 2807 21.74%
+40-20-15-2 692040 2112 984500 2749 42.26%
+40-20-15-3 763560 2034 978900 3006 28.20%
+Avg. 35.39%
+7.92%. Therefore, in the small-scale movie scene scheduling
+problem,theTSBMcanobtaingoodresultsinashortertime
+than the PSOBM. Based on the above analysis, it can be
+concludedthatforsmall-scaleproblems,theproposedTSBM
+isabetterwaytoobtainasatisfactorysolution.
+/six.fitted./three.fitted. Comparison between TSBM and PSOBM.For small-
+scaleproblems,CPLEX,TSBM,andPSOBMcanobtaingood
+results. But the CPLEX takes a long time. In addition, the
+resultofTSBMandPSOBMtakesashorttime.Therefore,for
+large-scale problems, the validity of the TSBM and PSOBM
+needs to be further studied experimentally. In this test, the
+resultofthecomparisonbetweenTSBMandPSOBMislisted
+inTable2.And 𝐺𝑎𝑝2 = (𝑂𝐵𝐽
+𝑃−𝑂𝐵𝐽𝑇)/𝑂𝐵𝐽𝑇∘
+The results in Table2 show that the average difference
+betweentheexperimentalresultsobtainedbytheTSBMand
+the PSOBM is 35.39%. And as the size of the experimental
+caseincreases,thetimerequiredforproblemsolvingcontin-
+uestoincrease.ExperimentalresultsshowthatTSBMismore
+suitable for solving medium-scale movie scenes scheduling
+problem.
+7. Conclusions
+Thispapermainlystudiestheoptimizationproblemofmovie
+scenes scheduling by considering transfer costs and certain
+shootingduration.Thepurposeisto minimizethetotalcost
+of actors and transfer costs included in the shooting scene
+of the crew, considering the different wage of the actors,
+the duration of the scene shooting, and the transfer costs
+between scenes. An integer linear programming model is
+b u i l t ,a n dT S B Ma n dP S O B Ma r ed e v e l o p e dt os o l v et h e
+proposedmodel.Beingcomparedwithotherrelatedresearch
+work, the major contribution of this study includes two
+aspects:
+(1)Beingdifferentfromthegeneralmoviescenesschedul-
+ingproblem,theproposedmodelinthispaperconsidersthe
+transfercostsandcertainshootingduration.
+(2) We propose different methods of TSBM and PSOBM
+forthemoviescenesschedulingproblemwithdifferentscale.
+The numerical experiments indicate both TSBM and
+PSOBM are suitable for solving small-scale problems. For
+large-scaleproblems,theTSBMcangetbetterresults.
+For future study, we will consider finding a better opti-
+mizationmethodinTSBMtoextendourwork.
+Data Availability
+Thedatausedinthisresearchisgeneratedrandomly.Detailed
+datagenerationmethodisintroducedinSection6.1.
+Conflicts of Interest
+The authors declare that there are no conflicts of interest
+regardingthepublicationofthispaper.
+References
+[1] T.C.Cheng,J.E.Diamond,andB.M.Lin,“Optimalscheduling
+in film production to minimize talent hold cost,”Journal of
+Optimization /T_heory and Applications,v o l .7 9 ,n o .3 ,p p .4 7 9 –
+492,1993.
+[2] A.-L. Nordstr¨om and S. Tufekci, “A genetic algorithm for the
+talent scheduling problem,”Computers & Operations Research,
+vol.21,no.8,pp.927–940,1994.
+[3] A. Fink and S. Voß, “Applications of modern heuristic search
+methods to pattern sequencing problems,”Computers & Oper-
+ations Research,vol.26,no .1,p p .17 –34,1999 .
+[4] F. Bomsdorf and U. Derigs, “A model, heuristic procedure and
+decisionsupportsystemforsolvingthemovieshootscheduling
+problem,”OR Spectrum,vol.30,no .4,p p .7 51 –77 2,2008.
+8 DiscreteDynamicsinNatureandSociety
+[5] M.GarciadelaBanda,P .J .Stuckey ,andG.Chu,“Solvingtalent
+schedulingwithdynamicprogramming,” INFORMSJournalon
+Computing,vol.23,no.1,pp.120–137,2011.
+[6] Y.Kochetov,“Iterativelocalsearchmethodsforthemoviescene
+scheduling problem,” in Proceedings of the /one.fittedst International
+SymposiumandBalkanConferenceonOperationalResearch ,pp.
+282–288,Thessaloniki,Greece,September2011.
+[7] X.Liang,Z.Zhang,H.Qin,S.Guo,andA.Lim,“ ABranch-and-
+Bound Algorithm for the movie scene scheduling problem,”
+in Proceedings of the /two.fitted/seven.fittedth International Conference on Modern
+Advances in Applied Intelligence, Part I,v o l .8 4 8 1 ,p p .2 0 8 – 2 1 7 ,
+S p ringer ,N ewY o rk,NY ,USA,201 4.
+[8] H.Qin,Z.Zhang,A.Lim,andX.Liang,“Anenhancedbranch-
+and-boundalgorithmforthetalentschedulingproblem,” Euro-
+pean Journal of Operational Research,v o l .2 5 0 ,n o .2 ,p p .4 1 2 –
+426,2016.
+[ 9 ]T .C .C h e n g ,B .M .L i n ,a n dH . - L .H u a n g ,“ T a l e n th o l dc o s t
+minimization in film production,”Journal of Industrial and
+ManagementOptimization,vol.13,no.1,pp.223–235,2017.
+[10] S.-Y.Wang,Y.-T.Chuang,andB.M.T.Lin,“Minimizingtalent
+costandoperatingcostinfilmproduction,” JournalofIndustrial
+and Production Engineering,vol.3 3,no .1,p p .17 –3 1,2016.
+[11] P. Gregory, A. Miller, and P. Prosser, “Solving the rehearsal
+problem with planning and with model checking,”College of
+Science and Engineering School of Computing Science,v o l .1 0 3 ,
+no.3,pp.441–446,2004.
+[12] N. Sakulsom and W. Tharmmaphornphilas, “Scheduling a
+music rehearsal problem with unequal music piece length,”
+Computers & Industrial Engineering,v o l .7 0 ,n o .1 ,p p .2 0 – 3 0 ,
+2014.
+[13] L.Zhen,“Tacticalberthallocationunderuncertainty,” European
+Journal of Operational Research,v o l .2 4 7 ,n o .3 ,p p .9 2 8 – 9 4 4 ,
+2015.
+[14] H.Hu,J.Mo,andC.Ma,“Optimizationofvehicleroutingwith
+pickup based on multibatch production,”Discrete Dynamics in
+Nature and Society,vol.2018,ArticleID2804589 ,9pages,2018.
+[15] Z. Xue, C. Zhang, W.-H. Lin, L. Miao, and P. Yang, “A tabu
+search heuristic for the local container drayage problem under
+anewoperationmode,” TransportationResearchPartE ,vol.62,
+no.1,pp.136–150,2014.
+[16] L. Shen, “A tabu search algorithm for the job shop problem
+withsequencedependentsetuptimes,” Computers&Industrial
+Engineering,vol.7 8,p p .95–106,201 4.
+[ 1 7 ]H .Q i n ,W .M i n g,Z .Z h a n g,Y .X i e ,a n dA .L i m ,“ At a b us e a r c h
+algorithm for the multi-period inspector scheduling problem,”
+Computers&OperationsResearch ,vol.59 ,p p .7 8–9 3,2015.
+[18] B.Peng,Z.L ¨u,andT.C.E.Cheng,“Atabusearch/pathrelinking
+algorithmtosolvethejobshopschedulingproblem,” Computers
+& Operations Research,vol.53,no.53,pp.154–164,2015.
+[19] H. Li and B. Alidaee, “Tabu search for solving the black-and-
+white travelling salesman problem,”Journal of the Operational
+ResearchSociety,vol.67 ,no .8,p p .1061 –1079 ,2016.
+[20] X.LiandL.Gao,“Aneffectivehybridgeneticalgorithmandtabu
+search for flexible job shop scheduling problem,”International
+J o u rna lo fPr od uct io nEco no m ics,vol.17 4,p p .9 3–110,2016.
+[21] O. Shahvari and R. Logendran, “An enhanced tabu search
+algorithm to minimize a bi-criteria objective in batching
+and scheduling problems on unrelated-parallel machines with
+desired lower bounds on batch sizes,”Computers & Operations
+Research,vol.77 ,p p .154–17 6,2017 .
+[22] C.-T .W ei,H.Zuo,C.-B.Jiang,andS.-f.Li,“Modelingmultilevel
+supplierselectionproblembasedonweighted-directednetwork
+and its solution,”Discrete Dynamics in Nature and Society,v o l .
+2017,ArticleID8470147,12pages,2017.
+[23] J. Kennedy and R. Eberhar, “Particle swarm optimization,” in
+ProceedingsoftheIEEEInternationalConference ,pp.1942–1948,
+IEEE,1995.
+[24] H. Garg and S. P. Sharma, “Multi-objective reliability-redun-
+dancy
+allocation problem using particle swarm optimization,”
+Computers&IndustrialEngineering ,v ol.64,no .1,p p .2 47 –255,
+2013.
+[25] N. Hamta, S. M. T. Fatemi Ghomi, F. Jolai, and M. Akbarpour
+Shirazi,“AhybridPSOalgorithmforamulti-objectiveassembly
+linebalancingproblemwithflexibleoperationtimes,sequence-
+dependent setup times and learning effect,”International Jour-
+nal ofProductionEconomics,vol.141,no.1,pp.99–111,2013.
+[26] Z. Yuguang, A. Bo, and Z. Yong, “A PSO algorithm for multi-
+objective hull assembly line balancing using the stratified
+optimizationstrategy,”Computers&IndustrialEngineering ,vol.
+98,pp.53–62,2016.
+[27] B.Yao,B.Yu,andP.Hu,“Animprovedparticleswarmoptimiza-
+tion for carton heterogeneous vehicle routing problem with a
+collectiondepot,” AnnalsofOperationsResearch ,vol.242,no.2,
+pp. 303–320, 2016.
+[ 2 8 ]A .K h a t a m i ,S .M i r g h a s e m i ,A .K h o s r a v i ,C .P .L i m ,a n dS .
+Nahavandi,“AnewPSO-basedapproachtofireflamedetection
+usingK-Medoids clustering,”ExpertSystemswithApplications ,
+vol.68,pp.69–80,2017.
+[29] L.Zhen,“Modelingofyardcongestionandoptimizationofyard
+template in container ports,”Transportation Research Part B:
+Methodological,vol.90,p p .8 3–104,2016.
+[ 3 0 ]L .Z h e n ,E .P .C h e w ,a n dL .H .L e e ,“ A ni n t e g r a t e dm o d e lf o r
+berth template and yard template planning in transshipment
+hubs,”Transportation Science,vol.45,no .4,p p .483–504,2011.
+Hindawi
+www.hindawi.com Volume 2018
+Mathematics
+Journal of
+Hindawi
+www.hindawi.com Volume 2018
+Mathematical Problems 
+in Engineering
+Applied Mathematics
+Journal of
+Hindawi
+www.hindawi.com Volume 2018
+Probability and Statistics
+Hindawi
+www.hindawi.com Volume 2018
+Journal of
+Hindawi
+www.hindawi.com Volume 2018
+Mathematical Physics
+Advances in
+Complex Analysis
+Journal of
+Hindawi
+www.hindawi.com Volume 2018
+Optimization
+Journal of
+Hindawi
+www.hindawi.com Volume 2018
+Hindawi
+www.hindawi.com
+ Volume 2018
+Engineering  
+ Mathematics
+International Journal of
+Hindawi
+www.hindawi.com Volume 2018
+Operations Research
+Advances in
+Journal of
+Hindawi
+www.hindawi.com Volume 2018
+Function Spaces
+Abstract and 
+Applied Analysis
+Hindawi
+www.hindawi.com Volume 2018
+International 
+Journal of 
+Mathematics and 
+Mathematical 
+Sciences
+Hindawi
+www.hindawi.com Volume 2018
+Hindawi Publishing Corporation 
+http://www.hindawi.com Volume 2013
+Hindawi
+www.hindawi.com
+The Scientific 
+World Journal
+Volume 2018
+Hindawi
+www.hindawi.com
+ Volume 2018
+Volume 2018
+Numerical Analysis
+Numerical Analysis
+Numerical Analysis
+Numerical Analysis
+Numerical Analysis
+Numerical Analysis
+Numerical Analysis
+Numerical Analysis
+Numerical Analysis
+Numerical Analysis
+Numerical Analysis
+Numerical Analysis
+Advances in
+Advances in
+ Discrete Dynamics in 
+Nature and Society
+Hindawi
+www.hindawi.com Volume 2018
+Hindawi
+www.hindawi.com
+Diﬀerential Equations
+International Journal of
+Volume 2018
+Hindawi
+www.hindawi.com Volume 2018
+Decision Sciences
+Advances in
+Hindawi
+www.hindawi.com Volume 2018
+Analysis
+International Journal of
+Hindawi
+www.hindawi.com Volume 2018
+Stochastic Analysis
+International Journal of
+Submit your manuscripts at
+www.hindawi.com

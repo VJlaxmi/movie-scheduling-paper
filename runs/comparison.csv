@@ -1,0 +1,12 @@
+seed,algorithm,objective,violations,path,milp_objective,gap_pct
+0,MILP,7676.045021948598,False,/Users/vjsandy/Documents/ResearchPapers/MovieScheduling/artifacts/baseline_20250923_144228,7676.045021948598,0.0
+5,GA,12062.79824351276,False,/Users/vjsandy/Documents/ResearchPapers/MovieScheduling/runs/ga_seed5.json,7676.045021948598,57.148612456295425
+4,GA,12062.79824351276,False,/Users/vjsandy/Documents/ResearchPapers/MovieScheduling/runs/ga_seed4.json,7676.045021948598,57.148612456295425
+3,GA,12062.79824351276,False,/Users/vjsandy/Documents/ResearchPapers/MovieScheduling/runs/ga_seed3.json,7676.045021948598,57.148612456295425
+2,GA,12062.79824351276,False,/Users/vjsandy/Documents/ResearchPapers/MovieScheduling/runs/ga_seed2.json,7676.045021948598,57.148612456295425
+1,GA,12062.79824351276,False,/Users/vjsandy/Documents/ResearchPapers/MovieScheduling/runs/ga_seed1.json,7676.045021948598,57.148612456295425
+2,PSO,12062.79824351276,False,/Users/vjsandy/Documents/ResearchPapers/MovieScheduling/runs/pso_seed2.json,7676.045021948598,57.148612456295425
+3,PSO,12062.79824351276,False,/Users/vjsandy/Documents/ResearchPapers/MovieScheduling/runs/pso_seed3.json,7676.045021948598,57.148612456295425
+4,PSO,12062.79824351276,False,/Users/vjsandy/Documents/ResearchPapers/MovieScheduling/runs/pso_seed4.json,7676.045021948598,57.148612456295425
+5,PSO,12062.79824351276,False,/Users/vjsandy/Documents/ResearchPapers/MovieScheduling/runs/pso_seed5.json,7676.045021948598,57.148612456295425
+1,PSO,12062.79824351276,False,/Users/vjsandy/Documents/ResearchPapers/MovieScheduling/runs/pso_seed1.json,7676.045021948598,57.148612456295425

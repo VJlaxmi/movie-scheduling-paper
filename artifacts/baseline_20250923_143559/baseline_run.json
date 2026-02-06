@@ -1,0 +1,16 @@
+{
+  "timestamp": "20250923_143559",
+  "data_path": "/Users/vjsandy/Documents/ResearchPapers/MovieScheduling/testing_data_enriched.xlsx",
+  "solver": "<pyomo.contrib.appsi.base.SolverFactoryClass.register.<locals>.decorator.<locals>.LegacySolver object at 0x1268a7c40>",
+  "termination_condition": "optimal",
+  "objective_value": 20755.077595954765,
+  "verification": {
+    "each_scene_once": true,
+    "day_hours_leq_8": true,
+    "actor_availability": true,
+    "actor_scene_membership": true,
+    "location_availability": true,
+    "one_town_per_day": true,
+    "objective_estimate": 23.657173382173383
+  }
+}

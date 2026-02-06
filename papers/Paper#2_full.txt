@@ -1,0 +1,809 @@
+Received February 28, 2020, accepted March 19, 2020, date of publication March 23, 2020, date of current version April 7, 2020.
+Digital Object Identifier 10.1 109/ACCESS.2020.2982664
+Scheduling Problem of Movie Scenes Based
+on Three Meta-Heuristic Algorithms
+XIAOQING LONG AND JINXING ZHAO
+School of Mathematical Sciences, Inner Mongolia University, Hohhot 010021, China
+Corresponding author: Jinxing Zhao (zhjxing@imu.edu.cn)
+This work was supported in part by the National Natural Science Foundation of China under Grant 11965014, and in part by the Inner
+Mongolia Natural Science Foundation under Grant 2018MS01017.
+ABSTRACT Movie scenes scheduling problem (MSSP) is the NP-hard. It refers to the process of ﬁlm
+shooting through the reasonable sequence of ﬁlm scenes to minimize the total cost of ﬁlm shooting. Studying
+scheduling problem of this kind is based on the location of the scene shooting, the cost of the scene transfer,
+the different remuneration of actors, and the different duration of the ﬁlm scene shooting. The actors’
+waiting time and transfer cost during the shooting process are reduced as much as possible to make the
+total ﬁlm shooting cost smaller. In this paper, an ILP(integer linear programming) model is established and
+a TABU search based method (TSBM), a particle swarm optimization based method (PSOBM) and an ant
+colony based method (ACOBM) are used to study the movie scenes scheduling problem. The objective
+is to compare and analyze relation performances of the three methods in the problem. By compared the
+experiment, the results show that TSBM, PSOBM and ACOBM can effectively reduce the total cost of
+ﬁlm shooting. Comparison with the experiments show that the optimization result of ACOBM is better,
+the running time of TSBM is shorter, and the optimization result of TSBM is better than that of PSOBM.
+In addition, the running time of ACOBM is faster than that of PSOBM by setting the number of ants and the
+number of particles. The potential application of this study has great relevance for the optimization and ILP.
+INDEX TERMS Scene transfer, TSBM, PSOBM, ACOBM, ILP, numerical experiments.
+I. INTRODUCTION
+In real life, due to the inﬂuence of various factors,
+the sequence of ﬁlm scenes shooting can’t make the total cost
+of ﬁlm optimal. Therefore, in order to optimize the sequence
+of ﬁlm shooting to reduce the ﬁlm shooting cost as much
+as possible, we will do the following ﬁlm scenes scheduling
+problem. The movie scenes scheduling problem is described
+as follows. Let P = {p1,p2,..., pk }be a set of k actors
+and S ={s1,s2,..., sn}denote a set of n scenes, also we
+denote L = {l1,l2,..., lm}represent a set of m different
+locations for shooting. The T = {t1,t2,..., tn}shows the
+duration of n different scene shots and W ={w1,w2,..., wk }
+means the cost of different actors for one day. The sequence
+of scenes taken by each actor is a subset of the sequence of
+ﬁlming scenes. In addition, the total time for all actors to
+shoot scene n is equivalent to the duration of scene n. All
+actors are in the crew from the beginning to the end of the
+The associate editor coordinating the review of this manuscript and
+approving it for publication was Jagdish Chand Bansal.
+ﬁlm shooting. During this time, each actor will get their daily
+salary, no matter how long or short they are shooting on the
+day or they don’t have a shooting task on the day.
+Moreover, shooting scenes in different locations will result
+in transfer time among scenes, which will increase the time
+for actors to act in the next scene. And it is also a factor
+affecting the total cost of ﬁlm shooting. The MSSP is how
+to reduce actors’ waiting time in consideration of the scene
+transfer cost and the actors’ different salaries, so as to reduce
+the total cost of the ﬁlm in the limited shooting hours.
+Up to now, there are a lot of literature on ﬁlm scenes
+scheduling problem, but most of them don’t consider the
+impact of different shooting locations on the total cost of
+ﬁlm shooting. For this reason, this paper studies the movie
+scenes scheduling problem by considering the location of the
+scene shooting, the cost of the scene transfer, the different
+remuneration of actors, and the different duration of the ﬁlm
+scene shooting. In this paper, the optimal solution to the
+problem is obtained by using operational research methods to
+solve the mathematical model. Operational research methods
+VOLUME 8, 2020 This work is licensed under a Creative Commons Attribution 4.0 License. For more information, see https://creativecommons.org/licenses/by/4.0/ 59091
+X. Long, J. Zhao: Scheduling Problem of Movie Scenes Based on Three Meta-Heuristic Algorithms
+are widely used in personnel management, project selection
+and evaluation and other aspects. This paper abstracts the
+MSSP which is the reasonable allocation and transfer of
+talents in the process of ﬁlm shooting into an integer linear
+programming model (ILP). Meta-heuristic algorithms such as
+tabu search based method (TSBM), particle swarm optimiza-
+tion based method (PSOBM), ant colony optimization based
+method(ACOBM), genetic based method (GBM), simulated
+annealing based method (SABM), artiﬁcial neural network
+based method (ANNBM), and evolutionary programming
+based method (EPBM) are effective to solve this problem.
+TSBM is a successful application of combinatorial optimiza-
+tion algorithm. It adopts a ﬂexible memory technique in the
+search process, which is the tabu list. PSOBM has a sim-
+ple structure and fewer parameters to control. ACOBM has
+strong robustness in solving performance. We adopt TSBM,
+PSOBM, and ACOBM to study the MSSP. And we compare
+and analyze their relation performances by numerical exper-
+iments in the progress.
+The main content is organized as follows: In section 2,
+some related research on ﬁlm scenes scheduling problem is
+summarized. In section 3, it is going to establish an integer
+programming (IP) model to restrict the ﬁlm scenes schedul-
+ing problem. In section 4, 5, and 6, it’s going to make a brief
+introduction of TSBM, PSOBM, and ACOBM. In section 7,
+the numerical experiments verify the applicability of TSBM,
+PSOBM, and ACOBM applied to the scheduling problem of
+movie scenes, and these three methods are compared. In the
+last part, we conclude the whole paper.
+II. RELATED RESEARCH
+The ﬁlm shooting problem is a multi-factor optimization
+problem, which includes the actor’s salary, the actor’s shoot-
+ing time in each scene, the scene shooting location and the
+scene transfer cost. The ﬁlm scenes scheduling problem is
+to study these factors, make the scenes in the same place
+be shot continuously as possible, which purpose is to reduce
+the waiting time of actors and optimize the sequence of ﬁlm
+shooting to achieve the purpose of reducing the total cost of
+the whole ﬁlm.
+The ﬁlm scenes scheduling problem was originated form
+a restricted talent scheduling problem proposed by Adelson,
+Norman et al.[1], in which the wage of each actor is same.
+Cheng et al. [2] ﬁrst classiﬁed the ﬁlm scenes scheduling
+problem as the NP-hard, in which all actors received the
+same salary every day and each scene had the same shoot-
+ing duration. They proposed a combined model to reduce
+the waiting days of actors and studied it by using a branch
+and bound algorithm and a heuristic algorithm. Smith [3]
+proposed a constraint planning model for studying the ﬁlm
+scenes scheduling problem which are proposed by Cheng.
+She accelerated the constraint programming method by cap-
+turing the search states. In [4], the conceptual model was
+proposed a conceptual model for the movie scenes schedul-
+ing problem, and introduced the operation of each module
+of the model in detail. Besides, they distinguished between
+the movie scene scheduling problems and the resource con-
+straint(project) scheduling problems and proved that the con-
+ceptual model can get a better solution faster than temporary
+rescheduling by experimenting in a decision support system.
+In some subsequent literature, some scholars took into
+account the different actors’ salaries and the different dura-
+tion of each scene shooting when studying the problem.
+Banda et al. [5] proposed the basic dynamic programming
+scheme to study the ﬁlm scenes scheduling problem. They
+improved the dynamic programs by determining upper and
+lower bounds, which are achieved by preprocessing and lim-
+iting searches. They showed the process of sorting scenar-
+ios from both ends, and proved that the improved dynamic
+programming algorithm which can deal with larger problems
+runs faster than the competing approaches. Hu et al.[6] used
+a branch and bound algorithm to study the movie scenes
+scheduling problem proposed by Da la banda et al.In their
+research, they accelerated and enhanced the branch and
+bound search algorithm through preprocessing, dominance
+rules, caching search status, etc. By numerical experiments,
+the branch and bound algorithm is superior to the current
+best exact algorithm. Wang et al.[7] expanded and promoted
+the budget issues raised by Cheng et al.[2]. Considering the
+operation costs of crew, they used the next ﬁt algorithm and
+the ﬁrst ﬁt decreasing algorithm to allocate scenes to work,
+and adopted dynamic programming, iterated local search, and
+tabu search to minimize cost in ﬁlm production. In 2017,
+Cheng et al.[8] studied the problem of rehearsal scheduling
+in music and dance performance. They provided two methods
+to tightening the lower bound on the minimization of talent
+hold cost. One is to formulate a maximum weighted matching
+problem, and the other is to solve a maximum weighted
+3-grouping and retrieve structural information.
+From the above study, we can see that most of the scholars
+consider the cost of actors and duration of scene shooting.
+They consider the wage of each actor is same and scenes
+have the same shooting duration.As well as the actors salaries
+and the duration of each scene shooting have different value.
+Nevertheless, different scenes may be taken in different loca-
+tions to shoot in the process, which is a high potential for
+transfer cost. Most scholars consider shooting in one location,
+or do not consider the effect of locations on the shooting
+process. Bomsdorf and Derigs [4] studied the MSSP shot in
+an abandoned building. Kochetov [9] presented iterative local
+search methods for solving MSSP and only considered the
+inﬂuence of talents and scenes to the problem. Wang et al.[7]
+considered the relationship between actors and scenes and
+did not mention the location of the ﬁlm. Therefore, it is
+important to study the location of scene shooting in movie
+scenes scheduling problem. There are also many studies sim-
+ilar to the movie scenes scheduling problem, such as route
+optimization problem, program rehearsal problem, and the
+problem of vehicle mobilization. In the study of movie scenes
+scheduling problem, we learn from the ideas and methods
+of these research problems. The movie scenes scheduling
+problem can refer to the traveling salesman problem, which
+59092 VOLUME 8, 2020
+X. Long, J. Zhao: Scheduling Problem of Movie Scenes Based on Three Meta-Heuristic Algorithms
+is to ﬁnd a shorter short-circuit line for travel, and the movie
+scenes scheduling problem is to ﬁnd a sequence of movie
+shots that make the total cost of the whole movie lower. The
+cost between scene m and scene n can be regarded as the
+distance from city i to city j.
+III. MODEL FORMULAS AND CONSTRAINTS
+The ﬁlm scenes scheduling problem is to reduce the total
+cost of the ﬁlm by iteration to search for the best shooting
+sequence under the limitation of the actor shooting wage,
+the scene shooting duration, and the scene transfer cost.
+This section builds a linear programming model ﬁrst. This
+paper applies the model to describe the MSSP and improves
+scheduling by improving constraints and removing useless
+constraints. The model consist of two parts. One is the cost of
+all the actors, the other is the cost of scene transfer. The time
+interval between the scene m and the scene n is composed of
+two parts. One is the time which the actors perform in the
+scene m, the other one is the time affected by the location
+of the scene shoot which the actors move from scene m to
+scene n.
+A. SYMBOL DESCRIPTION
+(1) Indicators and Sets
+m,n: Index of scenes.
+p: Index of actors.
+a,b: Index of the location for shooting.
+P: Set of all the actors.
+L: Set of all shooting locations; a,b ∈L.
+R: Set of all the scenes. Set two virtual scenes 0 and T .
+which 0 means starting to shoot the scenes and T mean ending
+scenes shooting.
+m,n ∈R,R0 =R ∪{0},RT =R ∪{T },¯R =R ∪{0,T },
+(2) Parameters
+Wp: The daily salary of actor p.
+xmp: Set to 1 if the actor p performs in scene m. Other-
+wise, set it to 0.
+ωmnp: Set to 1 if the actor p performs in scene m and
+scene n. Otherwise,set it to 0.
+cmn: The cost of moving from scene m to scene n.
+dm: The days for ﬁnishing scene m shooting.
+(3) Decision variables
+σmnp: Binary variable; if the actor p ﬁrst performs in the
+scene m and then performs in the scene n, the value is set to
+1,and zero else. It is no requirement to shoot scene m ﬁrst and
+then follow up with scene n.
+θmnp: Binary variable; if the actor p performs two adjacent
+scenes m and n, which the scene n is the next scene of the
+scene m, the value is set to 1; set it to 0 else.
+µmnp: Integer variable; the time interval actor p appears
+between the scene m and the scene n; the actor p ﬁrst performs
+in the scene m, and then performs in the scene n.
+λmn: Binary variable; if the scene m is ﬁrst shot immedi-
+ately after shooting scene n, it is set to 1. Set it to 0 else.
+tm: Integer variable; the time to ﬁnish the scene m.
+B. MATHEMATICAL MODEL
+Objective function:
+Minimize
+∑
+m∈R
+∑
+n∈R
+∑
+p∈P
+µmnpWp +
+∑
+n∈R
+∑
+m∈R
+λmncmn. (1)
+Constraints:
+∑
+n∈RT
+λ0n =1. (2)
+∑
+m∈R0
+λmT =1. (3)
+∑
+n∈RT
+λmn =1, ∀m ∈R,m ̸=n. (4)
+∑
+n∈R0
+λmn =1, ∀m ∈R,m ̸=n. (5)
+λmn +λnm ≤1, ∀m,n ∈¯R. (6)
+tn −tm −dn ≤M(1 −λmn), ∀m ∈R0,n ∈RT .
+(7)∑
+n∈R
+θ0np =1, ∀p ∈P. (8)
+∑
+n∈R
+θnTp =1, ∀p ∈P. (9)
+σmnp +σmnp =ωmnp,
+∀m,n ∈¯R,m ̸=n,∀p ∈P. (10)
+θmnp ≤θmnp,
+∀m,n ∈¯R,∀p ∈P. (11)
+xmp ≤
+∑
+n∈RT
+θmnp, ∀m ∈R0,∀p ∈P.
+(12)
+xmp ≤
+∑
+n∈R0
+θnmp, ∀m ∈RT ,∀p ∈P.
+(13)
+tn −tm +M(θmnp −1) ≤µmnp,
+∀m,n ∈S,m ̸=n,∀p ∈P. (14)
+dn +M(θ0np −1) ≤µ0np, ∀n ∈R,∀p ∈P. (15)
+M(θnTp −1) ≤µnTp, ∀n ∈R,∀p ∈P. (16)
+M(σmnp −1) ≤tn −tm,
+∀m ∈R0,∀n ∈RT ,
+m ̸=n,∀p ∈P. (17)
+xnp −0.5 ≤0.5(
+∑
+m∈¯R
+θmnp +
+∑
+m∈¯R
+θmnp) ≤xnp,
+∀n ∈¯R,m ̸=n,∀p ∈P. (18)
+tn −dn ≤M(2 −θ0np −λmn) +tm,
+∀m ∈R0,∀n ∈RT ,∀p ∈P. (19)
+tn −dn ≤M(2 −θnTp −λmn) +tm,
+∀m ∈R0,∀n ∈RT ,∀p ∈P. (20)
+0 ≤tn −tm −dn +M(1 −θmnp),
+∀m ∈R0,∀n ∈RT ,∀p ∈P. (21)
+VOLUME 8, 2020 59093
+X. Long, J. Zhao: Scheduling Problem of Movie Scenes Based on Three Meta-Heuristic Algorithms
+0 ≤tm ≤8dm, ∀m ∈¯R,∀p ∈P.
+(22)
+0 ≤µmnp, ∀m,n ∈¯S,∀p ∈P.
+(23)
+σmnp,θmnp,λmn ∈{0,1}, ∀m,n ∈¯R,∀p ∈P.
+(24)
+Under the above restrictive conditions, (1) minimize the
+total cost of scene transfer problem. One is the shooting
+cost of actors, the other is the transfer cost among scenes.
+It is to ﬁnd the minimum value under the speciﬁed con-
+straints according to the transformation of the scenes and
+the different parameters. Constraints (2) and (3) ensure that
+each scene has undergone complete shooting. They indicate
+that the sum of the transitions on the ﬁrst and last scenes
+is one. Constraints (4) and (5) ensure that there is only one
+scene before and after shooting each scene, and there is no
+situation that multiple scenes are shot at the same time. They
+describe that the sum of conversion factors is one when two
+scenes are different and one of them is ﬁxed. Constraint (6)
+limits the order about scene m and scene n. It requires that
+the sum of conversion factors be no more than one. Con-
+straint (7) describes the relationship between the two vari-
+ables λmn and tm. It describes the bound constraints on the
+difference value of the conversion parameters, which make
+the actual problem meaningful. Constraints (8) and (9) ensure
+that each actor has shot the scene that he/she is supposed to
+shoot, and there is no missing or overshooting. They indicate
+that the sum of the parameters is one at the starting points
+of 0 and T . Constraints (10) and (11) limit the relationship
+between the three variables θmnp, ωmnp, and σmnp. Constraints
+(12) and (13) ensure that there is only one scene before and
+after actor p performs in each scene, and there is no situation
+that actor p performs in multiple scenes at the same time.
+All four of them represent the limiting conditions for the
+transformation of two connection scenes.
+Through (14), (15), and (16), it comes up with µmnp.
+Constraint (17) describes the relationship between the two
+variables σmnp and tm. All four of them express the limiting
+conditions of the shooting time and the total time of the
+end of the ﬁrst and last scenes. Constraint (18) explain p
+make sort according to θmnp. Constraints (19), (20), and (21)
+describe the relationship between the two variables θmnp and
+tm. All four of them represent the constraint relations between
+the total shooting time and the number of shooting days.
+They require that the values that actor p is in the process
+of scene transition don’t exceed the sum of the start point
+to the end point, and the time difference between the end
+of the scenes m and n shooting is not less than the linear
+sum of the time in the shooting process. Constraints (22),
+(23), and (24) deﬁne decision variables. Among them, (22)
+describes the constraint of the time of shooting a scene and the
+cut-off time of scene m, and (23) represents the non-negative
+constraint of the parameter. We use this model and use TSBM,
+PSOBM, and ACOBM to solve the ﬁlm scenes scheduling
+problem based on medium scale environment, and analyze
+and compare these three methods.
+IV. TABU SEARCH BASED METHOD
+A. INTRODUCTION
+Tabu search method is developed from the local search
+algorithm. It was put forward by Glove in 1986 to solve
+an integer programming problem. So far, it has been
+applied in many ﬁelds, such as combinatorial optimization,
+machine learning, communication system, neural network,
+etc. Malek et al.[10] studied the traveling salesman problem
+in the parallel environment with the tabu search algorithm,
+which listed the city size under various conditions, and com-
+pared tabu search algorithm with simulated annealing algo-
+rithm. When a feasible solution was obtained, the time of
+TSBM was better than that of simulated annealing algorithm.
+Brandão and Mercer [11] proposed a new tabu search algo-
+rithm to solve the multi-vehicle route scheduling problem by
+considering the vehicle with different capacity, the restric-
+tion of customer choice, the driver’s vacation time, and the
+unloading time of the vehicle. Konishi and Shimba et al.[12]
+artiﬁcially found a solution to the local optimal solution of a
+Hopﬁeld-type neural network by using TSBM. Through com-
+puter simulation experiments, they found that this method
+was superior to Tanaka et al. ’s method of controlling the
+coefﬁcient of the energy function, and could obtain a better
+solution in a relatively short time. In this paper, we use a tabu
+search method to explore the ﬁlm scenes scheduling problem
+to reduce the total cost of ﬁlm shooting.
+The tabu search algorithm is a kind of generalization to
+the local domain. It guides the algorithm to search through
+the tabu table to store search process, and it is a stepwise
+optimization algorithm. The performance of the tabu search
+algorithm is affected by parameters such as initial solution,
+neighborhood structure, tabu table, selection strategy and
+break forbidden level. The TSBM is based on a local search
+algorithm. In this paper, we specify that the initial solution
+is randomly generated, and the initial solution is the ini-
+tial movie shooting sequence. Based on the initial solution,
+the solution space is generated by the domain structure. And
+the domain structure searches for the direction of the solution
+by solving the movement. The function of tabu list is to record
+the search direction. The tabu length plays a non-negligible
+role in TSBM. If the tabu length is too short, the algorithm
+will easily fall into the local optimal state and can’t ﬁnd the
+global optimal solution better. If the tabu length is too long,
+the search time will be increased. For the break forbidden
+level, its selection is based on the ﬁtness value, which is
+speciﬁed as the total cost of ﬁlm shooting. The selection
+strategy is to select the solution that makes the objective
+function value smaller. In the candidate solution set, the break
+forbidden level is the optimal ﬁtness value. If it is not in tabu
+list and improves the ﬁtness, the solution is chosen due to
+breaking the taboo rule. The next step is to update the break
+level to achieve the global optimal solution.
+59094 VOLUME 8, 2020
+X. Long, J. Zhao: Scheduling Problem of Movie Scenes Based on Three Meta-Heuristic Algorithms
+B. THE STRUCTURE OF TABU SEARCH
+1) DOMAIN STRUCTURE AND TABU LIST
+The domain structure is generated by the domain movement
+of the 2-opt and 2-swap modes, which determines the num-
+ber of solutions, the structure of solutions and the relation-
+ship among solutions. Tabu list records the moving position,
+which is the selection and swap position of 2-opt and 2-swap.
+With the progress of iteration, the tabu list will be full, then
+the ﬁrst movement came into the tabu list will exit from the
+tabu list and the latest movement came into it will be stored in
+the tabu list to prevent the algorithm from falling into a local
+optimal state.
+2) TABU STRATEGY AND BREAK FORBIDDEN LEVEL
+The tabu strategy is to record the searched solutions with tabu
+list through domain structure to prevent iterative solutions
+from repeating and falling into a loop. As tabu strategy is to
+lead the solution to a new region through movement so as
+to get the solution better than the historical optimal solution
+as far as possible. Some solution regions may be missed.
+So there is a need for the break forbidden level to coordinate
+the tabu strategy.
+3) SELECTION STRATEGY
+The selection strategy is to choose a better solution from the
+domain as the initial solution for the next iteration. Described
+as follows:
+y =selz(x)∈U z(x) =arg[minz(x)∈U V (z(x))]
+where y represents the best solution for the domain and x
+represents the current solution. We describe z(x) ∈U as a
+temporary solution and U ⊂Z(x) as a candidate solution
+set. V (z(x)) represents the ﬁtness function of the candidate
+solution z(x).
+4) BASIC PROCEDURE ABOUT THE TSBM
+After combing the procedures, we know:
+Step 1. First we assume a value of x, then use the formula
+to calculate the ﬁtness value of x. It starts with an empty
+set. Then specify the length of the tabu list. Besides, set step
+L(i.e., the number of iterations). Let p =1.
+Step 2. Judge if the current solution satisﬁes the termina-
+tion condition (i.e., reaching the maximum number of iter-
+ations). If so, output the current solution and terminate the
+algorithm. Otherwise, turn to step 3.
+Step 3. For the best solution in the candidate set, judge
+whether it meets the break forbidden level. If it does, update
+the break forbidden level and update the optimal solution x,
+then, go to step 6. Otherwise, turn to step 4.
+Step 4. If the solution does not meet the break forbidden
+level, the best solution in the candidate solution set that is not
+in tabu list is chosen as the current solution x.
+Step 5. If the optimal solution does not change after mul-
+tiple iterations, a new current solution x is generated for
+iteration to prevent the algorithm from falling into a local
+optimal state.
+Step 6. Update the global optimal solution xbest, and
+update the tabu list. Set p =p +1, and turn to step 2.
+V. PARTICLE SWARM OPTIMIZATION BASED METHOD
+A. INTRODUCTION
+The PSOBM is a stochastic optimization parallel element
+heuristic algorithm based on swarm intelligence proposed
+by Eberhart and Dr. Kennedy in 1995. This algorithm has a
+simple structure and fewer parameters to control, which has
+attracted the attention of domestic and foreign researchers.
+And it has been widely used in multi-objective optimization
+problems, nonlinear integer and mixed integer constrained
+optimization problems, neural networks, and signal process-
+ing. Salman et al. [13] used the particle swarm optimiza-
+tion algorithm to study the task assignment problem of a
+Np-complete problem, and compared it with the probabilis-
+tic heuristic genetic algorithm based on population on the
+randomly generated task interaction graph. They proved the
+effectiveness of the PSOBM. Jerald et al. [14] studied the
+scheduling optimization problem of ﬂexible manufacturing
+system in large-scale with PSOBM by designing differ-
+ent scheduling mechanisms to minimize the idle time of
+machines and the total penalty cost that does not meet the
+deadline at the same time. Jmal et al.[15] studied k-travel-
+repairman problems in the ﬁeld of transport of goods and
+services, and they proposed a quantum particle swarm opti-
+mization method involving heuristic repair operators in order
+to avoid violating problem constraints.
+The basic concept of PSOBM is derived from the study of
+foraging behavior of birds. Its idea is to ﬁnd the shortest path
+by simulating the foraging behavior of birds and the process
+of sharing information among bird groups. In the iterative
+process, each particle keeps changing its position and speed
+like a bird. Search direction and position of each particle are
+determined by its own speed. And each particle has an ﬁtness
+value determined by the objective function. Each particle can
+record the current best particle and continue to search within
+the solution space. The number of particles affects the search
+time of the algorithm. Each iteration of the particle position
+is not completely randomly generated, and the individual
+position is updated by tracking the optimal position of the
+individual particle ﬁtness value and the optimal position of
+the ﬁtness value of all particle searches, which can be used
+as the basis of the next iteration to ﬁnd the global optimal
+solution [16]. In this paper, we use the PSOBM to study
+a non-continuous integer linear programming model, and
+specify that the sequence of scene exchange represents the
+direction of particle search and the ﬁtness value of the particle
+is the total cost value of the ﬁlm under the shooting sequence.
+B. THE BASIC FLOW OF THE PSOBM
+Step 1: Set Num (i.e., the number of particle groups) and G
+(i.e.,the maximum number of iterations). Let m =1.
+Step 2: Initialize the particle swarm. Specify the initial
+position and speed of each particle.
+VOLUME 8, 2020 59095
+X. Long, J. Zhao: Scheduling Problem of Movie Scenes Based on Three Meta-Heuristic Algorithms
+Step 3: Calculate the ﬁtness value f (x) of each particle on
+the basis of the objective function.
+Step 4: Local comparison is made for each particle to
+compare its ﬁtness value f (x) with the ﬁtness value of the
+current optimal position pbest. If the ﬁtness value is better
+than that of pbest, replace the pbest and update the optimal
+value.
+Step 5: Global comparison is conducted for each particle.
+If the best ﬁtness value among all particles is better than the
+global ﬁtness value, the global position gbest is replaced with
+the position of the particle corresponding to the best ﬁtness
+value, and the global optimal value is updated.
+Step 6: Update the position and speed of each particle.
+Step 7: If the number of iterations reaches G or the number
+of iterations does not update the global optimal value, end the
+iteration. Otherwise, m =m +1,and turn to step 2.
+VI. ANT COLONY OPTIMIZATION BASED METHOD
+A. INTRODUCTION TO THE ACOBM
+The ant colony algorithm, which has the characteristics
+of information distribution, diversity, positive feedback and
+strong robustness, is a heuristic global optimization algo-
+rithm proposed by Dorigo et al.[17]. It was ﬁrst applied to
+the problem of travel agents. The advantages of ant colony
+algorithm make it widely concerned by researchers, and it
+is used in many ﬁelds such as job scheduling, path plan-
+ning, combinatorial optimization and data mining. Wang [18]
+proposed a polymorphic ant strategy by deﬁning different
+categories of ants and adopting various pheromone updating
+strategies, and combined with improved heuristic informa-
+tion to calculate the transfer probability of ants. She con-
+cluded the method can solve the problem of shop scheduling
+problem well. Xiao and Li [19] proposed an improved ant
+colony algorithm with modifying the pheromone update strat-
+egy by adjusting the pheromone residuals. They constructed
+a multi-constrained and multi-objective exam scheduling
+model and veriﬁed that the improved ant colony algorithm
+can effectively solve the problem of exam scheduling opti-
+mization. Zhang et al.[20] proposed a data collection strat-
+egy based on the ACO with mobile sink to study industrial
+wireless sensor network problems. In their research, on the
+one hand, they cited the selection of rendezvous nodes based
+on entropy weight method; on the other hand, they used ant
+colony algorithm to obtain the optimal access path of mobile
+sink, and the simulation results proved that the strategy could
+achieve the purpose of reducing network delay and extending
+network life.
+Ant colony algorithm is derived from the study of foraging
+behavior of ants in nature. Its idea is to ﬁnd the optimal path
+and solution by simulating the information transmission of
+ant colony during foraging. Each ant can release pheromones
+to change the surrounding environment, and timely sense
+changes in the surrounding environment and guide their
+movements. The number of ants also affects the search time
+of the algorithm. In the research problem, all paths of the
+whole ant colony constitute the solution space of the prob-
+lem to be optimized. On the path with optimal objective
+function value, pheromones released by ants will gradually
+increase, and pheromones in other paths will dissipate with a
+certain probability. Each ant can sense the path that has the
+most pheromones and move toward it. That create a positive
+feedback mechanism to make the whole ant colony ﬁnally
+concentrate on the best route, which is the optimal solution of
+the problem to be optimized. The ACOBM is used to optimize
+the movie scene scheduling problems in this paper.
+B. THE BASIC FLOW OF THE ACOBM
+Step 1: Set M(i.e., the total number of ants) and Num
+(i.e., the maximum number of iterations). Set the pheromone
+evaporation coefﬁcient, heuristic factor and pheromone fac-
+tor. Let m =1.
+Step 2: Initialize each ant, randomly place the ants at
+different starting points, and plan the path each ant moves.
+Step 3: Calculate the objective function value of each ant
+in the current path, compare and record the current iterative
+optimal solution, and update the pheromone on the path.
+Step 4: Determine whether the iteration reaches Num. If the
+number of iterations reaches Num, end the entire program and
+output the solution, otherwise, set m =m +1 and turn to
+step 2.
+VII. NUMERICAL EXPERIMENTS
+A. EXPERIMENTAL DATA SETTING
+In this section, the TSBM, PSOBM and ACOBM are used
+to solve the MSSP. The experimental analysis methods of
+Zhen et al. [21] and Zhen [22] will be used in this
+paper.
+The experimental data set for this paper is as follows. For
+the scene transfer cost cmn from scene m to scene n, they are
+randomly generated in the range of 0 to 10000. Furthermore,
+here is a constraint that requires that cmn equal to cnm. For the
+daily wage Wp of actor p, they are randomly generated from
+a range of CHY 80 per day to CHY 100 per day. In addition,
+the locations are randomly assigned for shooting the scenes.
+For example, there are 5 scenes and 2 shooting locations.
+Firstly, we assume that the result of sequence is 3 −5−2−4−1
+by sorting the ﬁve scenes randomly. Then, we randomly
+generate an integer a1 with a range between 1 and 5(including
+1 and 5). If a1 is equal to 3, scenes 3, 5, and 2 are sequentially
+taken at the ﬁrst location, and scenes 4 and 1 are sequentially
+shot at the second location. The time interval between the
+scene m and the scene n is the sum of the shooting time of
+all the actors in the scene m and the transition time of actors
+from scene m to scene n. The shooting time and the transition
+time are randomly generated as well. If scene m and scene
+n are shot at the same location, the transition time between
+them is set to 0. The parameters xmp (i.e., set it to 1 when the
+actor p has a show in scene m ) and ωmnp (i.e., set it to 1 when
+the actor p performs in scene m and scene n ) are generated
+based on the actor p.
+59096 VOLUME 8, 2020
+X. Long, J. Zhao: Scheduling Problem of Movie Scenes Based on Three Meta-Heuristic Algorithms
+TABLE 1. The performance of the proposed solution method.
+TABLE 2. Comparison of TSBM and PSOBM.
+B. PERFORMANCES OF THE PROPOSED
+SOLUTION METHOD
+This paper designs a TSBM, PSOBM and ACOBM to solve
+the MSSP of the NP-hard. We compare the total cost of
+the movie from the TSBM and PSOBM to the total cost
+of the movie from the ACOBM. TABLE 1 shows the result
+of comparing the TSBM, PSOBM, and ACOBM. In the ﬁrst
+column of TABLE 1, the former three values of ‘‘Case id’’
+describe the scale of scenes, actors, and shooting loca-
+tions of the movie, respectively. The fourth value repre-
+sents the index of different cases with the same parameters
+(i.e., the number of scenes, actors and locations remains
+unchanged). The main difference between the three cases
+is due to the difference in the salary of each actor and
+the cost of the scenes transfer. OBJT , OBJP, and OBJA in
+the paper respectively show the objective function values
+(i.e, the total cost of the movie ) of the TSBM, PSOBM, and
+ACOBM. TT (s),TP(s) and TA(s) show the time of computer
+CPU for the TSBM, PSOBM, and ACO from the start of
+the run to the end of the run. And Gap1 = OBTT −OBJA
+OBJA ,
+Gap2 =OBTP−OBJA
+OBJA .
+As can be seen from the TABLE 1, the TSBM getting
+a solution is faster than that of the PSOBM and ACOBM,
+and the ACOBM getting a solution is faster than that of
+the PSOBM. The average difference rate of the TSBM
+and ACOBM is 2 .3415%. The average difference rate of
+the PSOBM and ACOBM is 5 .2275%. Therefore, in the
+medium-scale MSSP, TSBM, PSOBM and ACOBM can opti-
+mize the MSSP. Moreover, ACOBM can get better results,
+and TSBM that obtains the result time is shorter.
+C. COMPARISON OF TSBM AND PSOBM
+For the medium-sized problem of the MSSP, the TSBM,
+PSOBM, and ACOBM can optimize it to reduce the total
+cost of ﬁlm scenes shooting, but the result of ACOBM are
+relatively good. Next, we further explore the effectiveness
+of the TSBM and PSOBM on the same scale. We conduct
+comparative experiments on the TSBM and PSOBM. The
+TABLE 2 lists the comparison results of TSBM and PSOBM
+at the same scale. And we deﬁne Gap3 =OBTP−OBJT
+OBJT .
+As can be seen from the TABLE 2, the average difference
+rate of the TSBM and PSOBM is 2 .8139%. Compared with
+VOLUME 8, 2020 59097
+X. Long, J. Zhao: Scheduling Problem of Movie Scenes Based on Three Meta-Heuristic Algorithms
+TABLE 3. Notation list.
+PSOBM, TSBM can get better results in less time. For the
+medium-scale MSSP, the TSBM is better than PSOBM.
+In the section, this result of the comparison and analysis
+shows that the optimization of ACOBM is the best and the
+running time of TSBM is the faster. Based on the purpose
+of minimizing the total cost in the MSSP, the ACOBM is the
+more appropriate for the problem in a real-world context. The
+shortcoming here is that a uniﬁed approach to optimization
+result and running time is not found, which we will improve
+it in a future study.
+VIII. CONCLUSION
+In this paper, the wage of each actor, scene transfer cost and
+scene shooting location are considered to study the optimal
+problem of the scenes scheduling mainly. The purpose of this
+paper is to take into account the actors’ salary, shooting time,
+shooting location and scene transfer cost within the speciﬁed
+ﬁlm shooting time to minimize the actors’ waiting time and
+transfer cost during the shooting process. We use the ILP
+model to implement the MSSP through the TSBM, PSOBM
+and ACOBM, and analyze and compare the proposed meth-
+ods. To solve the problem of the movie scenes scheduling,
+the work of this paper includes the following two aspects:
+(1) Being different from other studies on the MSSP,
+we consider the wage of each actor, the scene transfer cost,
+and the scene shooting location in the research process.
+(2) For the medium-scale MSSP, we implement TSBM,
+PSOBM and ACOBM methods to compare and analyze their
+relative performances. The TSBM, PSOBM and ACOBM can
+work for solving the medium-scale MSSP. The optimization
+results of the ACOBM are better than those of the TSBM and
+PSOBM, and the results of the TSBM are better than those
+of the PSOBM. In terms of running time, the TSBM can get
+optimization results faster. The running time of ACOBM and
+PSOBM are respectively affected by the number of ants and
+the number of particles. By adjusting the number of ants and
+the number of particles, we ﬁnd that the running time of the
+ACOBM can be faster than that of the PSOBM.
+The limitation of this article is that we don’t ﬁnd a quantity
+interval in which the ACOBM is better than the PSOBM in
+running time. For future research, we will break through this
+limitation and ﬁnd a better method to extend our work, which
+outperform the TSBM in the running time and the ACOBM
+in the operation result in this paper.
+NOTATION LIST
+The symbols used in the whole paper are explained in
+TABLE 3.
+REFERENCES
+[1] J. M. Norman, G. Laporte, and R. M. Adelson, ‘‘A dynamic programming
+formulation with diverse application,’’ Oper. Res. Quart., vol. 27, no. 1,
+pp. 119–121, 1976.
+[2] T. C. E. Cheng, J. E. Diamond, and B. M. T. Lin, ‘‘Optimal scheduling
+in ﬁlm production to minimize talent hold cost,’’ J. Optim. Theory Appl.,
+vol. 79, no. 3, pp. 479–492, Dec. 1993.
+[3] B. M. Smith, ‘‘Constraint programming in practice: Scheduling a
+rehearsal,’’ Res. Rep. APES-67-2003, Sep. 2003, p. 13.
+[4] F. Bomsdorf and U. Derigs, ‘‘A model, heuristic procedure and decision
+support system for solving the movie shoot scheduling problem,’’ OR
+Spectr., vol. 30, no. 4, pp. 751–772, Oct. 2008.
+[5] M. G. de la Banda, P. J. Stuckey, and G. Chu, ‘‘Solving talent schedul-
+ing with dynamic programming,’’ INFORMS J. Comput., vol. 23, no. 1,
+pp. 120–137, Feb. 2011.
+[6] H. Qin, Z. Zhang, A. Lim, and X. Liang, ‘‘An enhanced branch-and-bound
+algorithm for the talent scheduling problem,’’ Eur. J. Oper. Res., vol. 250,
+no. 2, pp. 412–426, Apr. 2016.
+[7] S.-Y . Wang, Y .-T. Chuang, and B. M. T. Lin, ‘‘Minimizing talent cost
+and operating cost in ﬁlm production,’’ J. Ind. Prod. Eng., vol. 33, no. 1,
+pp. 17–31, 2016.
+[8] T. C. Cheng, B. M. Lin, and H. L. Huang, ‘‘Talent hold cost minimization
+in ﬁlm production,’’ J. Ind. Manage. Optim., vol. 17, no. 1, pp. 223–235,
+2017.
+[9] Y . Kochetov, ‘‘Iterative local search methods for the talent scheduling
+problem,’’ in Proc. 1st Int. Symp. 10th Balkan Conf. Oper. Res., Jun. 2014,
+pp. 282–288.
+[10] M. Malek, M. Guruswamy, M. Pandya, and H. Owens, ‘‘Serial and parallel
+simulated annealing and tabu search algorithms for the traveling salesman
+problem,’’Ann. Oper. Res., vol. 21, no. 1, pp. 59–84, Dec. 1989.
+[11] J. Brand ¯ao and A. Mercer, ‘‘A tabu search algorithm for the multi-trip
+vehicle routing and scheduling problem,’’ Eur. J. Oper. Res., vol. 100, no. 1,
+pp. 180–191, Jul. 1997.
+59098 VOLUME 8, 2020
+X. Long, J. Zhao: Scheduling Problem of Movie Scenes Based on Three Meta-Heuristic Algorithms
+[12] J. Konishi, S. Shimba, J. Toyama, M. Kudo, and M. Shimbo, ‘‘Tabu search
+for solving optimization problems on Hopﬁeld neural networks,’’ in Proc.
+3rd Int. Conf. Knowl.-Based Intell. Inf. Eng. Syst., 1999, pp. 518–521.
+[13] A. Salman, I. Ahmad, and S. Al-Madani, ‘‘Particle swarm optimization
+for task assignment problem,’’ Microprocessors Microsyst., vol. 26, no. 8,
+pp. 363–371, Nov. 2002.
+[14] J. Jerald, P. Asokan, G. Prabaharan, and R. Saravanan, ‘‘Scheduling optimi-
+sation of ﬂexible manufacturing systems using particle swarm optimisation
+algorithm,’’Int. J. Adv. Manuf. Technol., vol. 25, nos. 9–10, pp. 964–971,
+May 2005.
+[15] S. Jmal, B. Haddar, and H. Chabchoub, ‘‘Apply the quantum particle
+swarm optimization for the K-traveling repairman problem,’’ Soft Comput.,
+vol. 23, no. 23, pp. 12547–12560, Dec. 2019.
+[16] N. G. Zhao and J. S. Deng, ‘‘A review of particle swarm optimization
+algorithm,’’Sci. Technol. Innov. Herald, vol. 12, no. 26, pp. 216–217, 2015.
+[17] M. Dorigo, V . Maniezzo, and A. Colorni, ‘‘Ant system: Optimization by
+a colony of cooperating agents,’’ IEEE Trans. Syst., Man, Cybern. B,
+Cybern., vol. 26, no. 1, pp. 29–41, Feb. 1996.
+[18] L. H. Wang, ‘‘Ant colony algorithm and its application in workshop
+scheduling,’’ M.S. thesis, School Manage., Hefei Univ. Technol., Hefei,
+China, 2009.
+[19] L. Xiao and Z. Li, ‘‘An improved ant colony algorithm and It’s application
+in exam-arrangement,’’ in Proc. 2nd Int. Workshop Intell. Syst. Appl.,
+May 2010, p. 1.
+[20] H. Zhang, Z. Li, W. Shu, and J. Chou, ‘‘Ant colony optimization algorithm
+based on mobile sink data collection in industrial wireless sensor net-
+works,’’EURASIP J. Wireless Commun. Netw., vol. 2019, no. 1, pp. 1–10,
+Dec. 2019.
+[21] L. Zhen, E. P. Chew, and L. H. Lee, ‘‘An integrated model for berth template
+and yard template planning in transshipment hubs,’’ Transp. Sci., vol. 45,
+no. 4, pp. 483–504, Nov. 2011.
+[22] L. Zhen, ‘‘Modeling of yard congestion and optimization of yard tem-
+plate in container ports,’’ Transp. Res. B, Methodol., vol. 90, pp. 83–104,
+Aug. 2016.
+XIAOQING LONGreceived the bachelor’s degree
+in mathematics and statistics from the School of
+Mathematical Sciences, Inner Mongolia Univer-
+sity, Hohhot, Inner Mongolia.
+JINXING ZHAOreceived the M.S. degree in basic
+mathematics from Yunnan University, Kunming,
+China, in 2005, and the Ph.D. degree in basic
+mathematics from the Dalian University of Tech-
+nology, Dalian, China, in 2017. Since 2002, he has
+been with Inner Mongolia University. In 2007,
+he became a Lecturer with the School of Math-
+ematical Sciences. His research interests mainly
+concern algorithm, data mining, algebra, and com-
+binatorial graph theory.
+VOLUME 8, 2020 59099

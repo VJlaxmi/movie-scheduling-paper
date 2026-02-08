@@ -1,0 +1,61 @@
+\section{Related Work}
+\label{sec:related}
+
+\subsection{Exact Methods for the MSSP}
+
+The MSSP was first formalized as an integer linear program by \citet{zhen2014}, who minimized actor wages and transfer costs using CPLEX.
+\citet{liu2019} extended this ILP with 24 constraints covering actor availability, location compatibility, and scene-day assignments, solving instances up to 15 scenes optimally before CPLEX exceeded 7{,}200-second time limits.
+\citet{tekin2023} developed the most comprehensive MILP formulation to date, with 31 constraints including precedence relations, time windows, and actor blocking periods.
+Using CPLEX on 160 benchmark instances, Tekin showed that exact solutions become impractical beyond 25 scenes with blocking-time constraints, motivating the need for metaheuristic approaches.
+
+\subsection{Metaheuristic Approaches}
+
+\citet{liu2019} introduced a Tabu Search-based metaheuristic (TSBM) achieving average gaps of 0.18\% from optimal on instances with 10--40 scenes and 3--20 actors, along with a PSO-based method (PSOBM) with 7.92\% average gaps.
+\citet{long2020} added an Ant Colony Optimization method (ACOBM) and showed ACO outperformed both TSBM and PSOBM in solution quality on larger instances.
+\citet{tekin2023} developed a discrete PSO with binary position representation and feasibility-based repair, achieving less than 1\% deviation from optimal on 106 out of 160 instances and finding better solutions than CPLEX (which timed out) on a real film script with 70 scenes and 43 actors.
+
+All existing metaheuristics operate on flat scene permutations without exploiting the coupling structure between scenes.
+None employ multi-objective optimization, decomposition strategies, or adaptive operator selection.
+
+\subsection{Multi-Objective Scheduling}
+
+Multi-objective evolutionary algorithms have been successfully applied to related scheduling problems.
+\citet{deb2002} introduced NSGA-II, which remains the standard for bi-objective optimization.
+\citet{han2025} applied NSGA-III to film scene visual optimization (a different problem from MSSP) with Wilcoxon rank-sum and Friedman statistical testing, demonstrating the viability of multi-objective evolutionary approaches in film production contexts.
+
+\subsection{Matheuristics and Adaptive Operator Selection}
+
+Matheuristics---hybrids of mathematical programming and metaheuristics---have shown strong performance on combinatorial optimization problems~\citep{talbi2009, maniezzo2010}.
+Decomposition-based matheuristics solve sub-problems exactly while using metaheuristics for global coordination.
+To our knowledge, no matheuristic has been applied to the MSSP.
+
+Adaptive operator selection (AOS) uses online learning to choose effective operators during search.
+\citet{thierens2005} introduced credit assignment for operator selection.
+Q-learning-based AOS~\citep{li2014, fialho2008} adapts operator probabilities based on search progress, population diversity, and improvement rate.
+
+\subsection{Positioning of This Work}
+
+Table~\ref{tab:positioning} summarizes the landscape.
+BDM-AOS is the first MSSP approach combining (i)~decomposition via graph clustering, (ii)~MILP-metaheuristic hybridization, (iii)~multi-objective optimization, and (iv)~adaptive operator selection with problem-specific operators.
+
+\begin{table}[t]
+\centering
+\caption{Positioning of BDM-AOS relative to existing MSSP approaches.}
+\label{tab:positioning}
+\small
+\begin{tabular}{lccccc}
+\toprule
+\textbf{Feature} & \textbf{Liu} & \textbf{Long} & \textbf{Tekin} & \textbf{BDM-AOS} \\
+ & \textbf{(2019)} & \textbf{(2020)} & \textbf{(2023)} & \textbf{(Ours)} \\
+\midrule
+MILP exact model          & \checkmark & \checkmark & \checkmark & \checkmark \\
+Single metaheuristic      & TS, PSO    & TS, PSO, ACO & PSO       & ---        \\
+Decomposition             & ---        & ---        & ---        & \checkmark \\
+Matheuristic hybrid       & ---        & ---        & ---        & \checkmark \\
+Multi-objective            & ---        & ---        & ---        & \checkmark \\
+Adaptive operator select. & ---        & ---        & ---        & \checkmark \\
+Problem-specific operators & ---       & ---        & ---        & LAX, ACM   \\
+Statistical testing        & ---       & ---        & ---        & \checkmark \\
+\bottomrule
+\end{tabular}
+\end{table}

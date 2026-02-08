@@ -1,0 +1,40 @@
+\section{Introduction}
+\label{sec:intro}
+
+Film production is a multi-million dollar industry where shooting schedules directly impact budgets.
+The \emph{Movie Scene Scheduling Problem} (MSSP) determines the order and day assignments of scenes to minimize total production cost---comprising actor wages, location fees, and inter-location transfer costs---subject to actor availability windows, location capacity limits, precedence relations, and time-window constraints.
+
+The MSSP is NP-hard, reducing to a variant of the resource-constrained project scheduling problem (RCPSP)~\citep{brucker1999}.
+Exact methods based on integer linear programming (ILP) can find provably optimal solutions for small instances (10--15 scenes) but become intractable as problem size grows~\citep{liu2019, tekin2023}.
+Metaheuristic approaches---including tabu search~\citep{liu2019}, particle swarm optimization~\citep{long2020, tekin2023}, and ant colony optimization~\citep{long2020}---offer scalable alternatives but operate on flat scene permutations, ignoring the structural coupling between scenes that share actors or locations.
+
+We observe that real film schedules exhibit \emph{shooting blocks}: groups of scenes that are tightly coupled through shared actors and co-located sets, and are typically filmed consecutively in practice.
+This observation motivates a decomposition approach that exploits this structure.
+
+\subsection{Contributions}
+
+We propose \textbf{BDM-AOS} (Bi-level Decomposition Matheuristic with Adaptive Operator Selection), which makes the following contributions:
+
+\begin{enumerate}
+    \item \textbf{Scene Interaction Graph (SIG):} A novel graph-theoretic representation where nodes are scenes and edge weights quantify coupling through actor sharing (Jaccard similarity), location sharing, and transfer cost proximity. Louvain community detection~\citep{blondel2008} on the SIG partitions scenes into shooting blocks, dramatically reducing the combinatorial search space.
+    
+    \item \textbf{Bi-level Matheuristic:} The upper level uses NSGA-II~\citep{deb2002} to evolve permutations of shooting blocks, simultaneously optimizing total cost and makespan. The lower level solves each block as a small MILP sub-problem or via a constraint-aware greedy heuristic, providing optimal or near-optimal intra-block scheduling. This is the first matheuristic approach for the MSSP.
+    
+    \item \textbf{Q-Learning Adaptive Operator Selection (AOS):} A reinforcement learning mechanism that dynamically selects among a pool of six crossover-mutation combinations, including two novel problem-specific operators:
+    \begin{itemize}
+        \item \emph{Location-Aware Crossover (LAX):} preserves sub-sequences where consecutive blocks share the same primary location;
+        \item \emph{Actor-Continuity Mutation (ACM):} reduces actor idle gaps by repositioning blocks to improve actor schedule continuity.
+    \end{itemize}
+    
+    \item \textbf{Multi-objective formulation:} We present the first bi-objective MSSP formulation optimizing cost and makespan simultaneously, providing a Pareto front of trade-off solutions.
+    
+    \item \textbf{Rigorous experimental evaluation:} Comprehensive experiments on 5 instance sizes (10--30 scenes) with 5 independent seeds per algorithm, including ablation studies and Wilcoxon rank-sum statistical testing.
+\end{enumerate}
+
+The remainder of this paper is organized as follows.
+Section~\ref{sec:related} reviews related work.
+Section~\ref{sec:methodology} presents the problem formulation and the BDM-AOS algorithm.
+Section~\ref{sec:experiments} describes the experimental setup and results.
+Section~\ref{sec:discussion} discusses findings and implications.
+Section~\ref{sec:limitations} addresses limitations.
+Section~\ref{sec:conclusion} concludes with future research directions.

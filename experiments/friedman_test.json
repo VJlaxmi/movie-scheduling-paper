@@ -1,0 +1,11 @@
+{
+  "statistic": 9.9,
+  "p_value": 0.019436,
+  "significant": true,
+  "avg_ranks": {
+    "BDM_AOS": 3.75,
+    "PSO": 1.5,
+    "BDM_NoAOS": 3.25,
+    "GA": 1.5
+  }
+}

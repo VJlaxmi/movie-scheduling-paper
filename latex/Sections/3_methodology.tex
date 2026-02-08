@@ -1,0 +1,141 @@
+\section{Methodology}
+\label{sec:methodology}
+
+\subsection{Problem Formulation}
+\label{sec:formulation}
+
+\paragraph{Sets and Parameters.}
+Let $\mathcal{S} = \{s_1, \ldots, s_n\}$ be the set of scenes, $\mathcal{A} = \{a_1, \ldots, a_m\}$ the actors, $\mathcal{L} = \{l_1, \ldots, l_k\}$ the locations, and $\mathcal{D} = \{1, \ldots, T\}$ the available days.
+Each scene $s$ has duration $\delta_s$ (hours), a set of required actors $A(s) \subseteq \mathcal{A}$, and compatible locations $L(s) \subseteq \mathcal{L}$.
+Each actor $a$ has daily wage $w_a$ and availability calendar $\mathcal{D}_a \subseteq \mathcal{D}$.
+Transfer costs $c_{l,l'}$ capture logistics between locations.
+Optional constraints include precedence pairs $(s_i, s_j)$ requiring $\text{day}(s_i) < \text{day}(s_j)$, time windows $[e_s, l_s]$, and deadline penalties.
+
+\paragraph{Decision Variables.}
+$x_{s,d} \in \{0,1\}$: scene $s$ is scheduled on day $d$.
+$y_{s,l} \in \{0,1\}$: scene $s$ is assigned to location $l$.
+
+\paragraph{Bi-Objective Formulation.}
+We minimize two objectives simultaneously:
+
+\begin{align}
+f_1(\mathbf{x}, \mathbf{y}) &= \sum_{a \in \mathcal{A}} w_a \cdot |\{d : \exists s, x_{s,d}=1 \wedge a \in A(s)\}| + \sum_{(s_i,s_j)} c_{l(s_i), l(s_j)} + P_{\text{deadline}} \label{eq:cost}\\
+f_2(\mathbf{x}) &= \max_{s \in \mathcal{S}} \text{day}(s) - \min_{s \in \mathcal{S}} \text{day}(s) + 1 \label{eq:makespan}
+\end{align}
+
+where $f_1$ is the total production cost (actor wages + transfer costs + deadline penalties) and $f_2$ is the makespan.
+
+\paragraph{Constraints.}
+\begin{align}
+\sum_{d \in \mathcal{D}} x_{s,d} &= 1 && \forall s \in \mathcal{S} \tag{C1}\\
+\sum_{s \in \mathcal{S}} \delta_s \cdot x_{s,d} &\leq 8 && \forall d \in \mathcal{D} \tag{C2}\\
+x_{s,d} &= 0 && \forall a \in A(s),\ d \notin \mathcal{D}_a \tag{C3}\\
+\text{day}(s_i) &< \text{day}(s_j) && \forall (s_i, s_j) \in \text{Prec} \tag{C4}\\
+e_s \leq \text{day}(s) &\leq l_s && \forall s \text{ with time windows} \tag{C5}
+\end{align}
+
+\subsection{Scene Interaction Graph (SIG)}
+\label{sec:sig}
+
+We define an undirected weighted graph $G = (\mathcal{S}, E, w)$ where each scene is a node and edge weights capture structural coupling:
+\begin{equation}
+w(s_i, s_j) = \alpha \cdot J_A(s_i, s_j) + \beta \cdot J_L(s_i, s_j) + \gamma \cdot \frac{1}{1 + \bar{c}(s_i, s_j)}
+\label{eq:sig}
+\end{equation}
+where $J_A(s_i, s_j) = \frac{|A(s_i) \cap A(s_j)|}{|A(s_i) \cup A(s_j)|}$ is the Jaccard similarity of actor sets, $J_L$ is the Jaccard similarity of location sets, $\bar{c}(s_i, s_j)$ is the average transfer cost between compatible locations, and $\alpha + \beta + \gamma = 1$ are weighting parameters (default: $\alpha{=}0.5$, $\beta{=}0.3$, $\gamma{=}0.2$).
+
+Scenes sharing many actors and locations receive high edge weights, encoding the intuition that such scenes benefit from consecutive scheduling.
+
+\paragraph{Louvain Decomposition.}
+We apply Louvain community detection~\citep{blondel2008} to $G$, which maximizes modularity to identify densely connected scene clusters.
+The resulting communities form \emph{shooting blocks} $B_1, B_2, \ldots, B_K$, where each block contains tightly coupled scenes.
+We iteratively increase the resolution parameter and split blocks exceeding a maximum size to ensure at least $\lceil n/4 \rceil$ blocks, providing sufficient combinatorial richness for the upper-level search.
+
+\subsection{Bi-Level Matheuristic}
+\label{sec:bilevel}
+
+\paragraph{Upper Level: NSGA-II over Block Permutations.}
+The upper level encodes solutions as permutations of block indices $\pi = (\pi_1, \pi_2, \ldots, \pi_K)$, defining the order in which blocks are scheduled.
+This reduces the search space from $n!$ (scene permutations) to $K!$ (block permutations), where typically $K \ll n$.
+
+We use NSGA-II~\citep{deb2002} with population size 20 and 40 generations.
+Non-dominated sorting partitions the population into Pareto fronts, and crowding distance maintains solution diversity within each front.
+
+\paragraph{Lower Level: Global Greedy Reassembly.}
+For each block permutation $\pi$, we construct a scene-level ordering by concatenating the scenes of each block in sequence: first all scenes from $B_{\pi_1}$ (sorted by constraint tightness), then $B_{\pi_2}$, and so on.
+A global greedy decoder then processes this ordering, packing scenes into shooting days using the same mechanism as standalone baselines:
+\begin{itemize}
+    \item Scenes are assigned to the earliest feasible day respecting capacity ($\leq 8$h/day), actor availability, and time windows;
+    \item Location is chosen to minimize transfer cost from the previous scene;
+    \item Days are shared across blocks naturally, avoiding the cost overhead of isolated per-block scheduling.
+\end{itemize}
+
+This \emph{global reassembly} approach ensures that the decomposition guides the ordering while the greedy decoder handles day packing, achieving cost-competitive solutions while preserving the search-space reduction of block-level evolution.
+
+\paragraph{Solution Evaluation.}
+Each chromosome $\pi$ is evaluated by the global greedy reassembly: scenes are ordered according to the block permutation, then greedily assigned to days.
+Evaluation results are cached (keyed by $\pi$) to avoid redundant computation.
+The result is a bi-objective vector $(f_1, f_2)$ fed to NSGA-II.
+
+\begin{algorithm}[t]
+\caption{BDM-AOS: Bi-Level Decomposition Matheuristic}
+\label{alg:bdm_aos}
+\begin{algorithmic}[1]
+\REQUIRE MSSP instance $(\mathcal{S}, \mathcal{A}, \mathcal{L}, \mathcal{D})$, parameters $(N, G, p_c, p_m)$
+\ENSURE Pareto front of schedules
+\STATE Build Scene Interaction Graph $G_{\text{SIG}}$ via Eq.~(\ref{eq:sig})
+\STATE $\{B_1, \ldots, B_K\} \leftarrow$ Louvain$(G_{\text{SIG}})$
+\STATE Initialize population $P = \{\pi_1, \ldots, \pi_N\}$ (random block permutations)
+\STATE Evaluate each $\pi_i$ via global greedy reassembly
+\FOR{$g = 1$ to $G$}
+    \STATE Compute diversity $d$, improvement rate $r$, quality gap $q$
+    \STATE $(cx, mut) \leftarrow$ AOS.select$(g, G, d, r, q)$ \COMMENT{Q-learning}
+    \STATE Generate offspring via $cx$ crossover and $mut$ mutation
+    \STATE Evaluate offspring via bi-level solving
+    \STATE $P \leftarrow$ NSGA-II environmental selection$(P \cup \text{offspring})$
+    \STATE AOS.update(reward $= \Delta$HV)
+\ENDFOR
+\RETURN Non-dominated solutions from $P$
+\end{algorithmic}
+\end{algorithm}
+
+\subsection{Q-Learning Adaptive Operator Selection}
+\label{sec:aos}
+
+We formulate operator selection as a reinforcement learning problem.
+
+\paragraph{State Space.}
+The state is discretized from four continuous features:
+(i)~generation progress (early/mid/late),
+(ii)~population diversity via normalized Hamming distance (low/medium/high),
+(iii)~improvement rate of hypervolume over the last generation (stagnant/slow/fast),
+(iv)~quality gap from the reference point (good/moderate/poor).
+This yields $3 \times 3 \times 3 \times 3 = 81$ possible states.
+
+\paragraph{Action Space.}
+Each action selects a (crossover, mutation) pair from $\{$PMX, OX, LAX$\} \times \{$swap, block-swap, ACM$\}$, giving 9 actions.
+
+\paragraph{Reward.}
+The reward after applying action $a$ in state $s$ is the change in hypervolume:
+$r = \text{HV}(P_{g+1}) - \text{HV}(P_g)$.
+
+\paragraph{Update Rule.}
+Standard Q-learning with $\epsilon$-greedy exploration ($\epsilon_0 = 0.3$, decay $0.995$, minimum $0.05$):
+\begin{equation}
+Q(s, a) \leftarrow Q(s, a) + \alpha \left[ r + \gamma \max_{a'} Q(s', a') - Q(s, a) \right]
+\label{eq:qlearning}
+\end{equation}
+with learning rate $\alpha = 0.1$ and discount factor $\gamma = 0.9$.
+
+\subsection{Novel Problem-Specific Operators}
+\label{sec:novel_ops}
+
+\paragraph{Location-Aware Crossover (LAX).}
+LAX preserves \emph{location runs}: maximal sub-sequences of blocks sharing the same primary location in a parent.
+The longest location run from parent 1 is copied intact to the child, and remaining positions are filled from parent 2 in order.
+This preserves spatial locality, reducing inter-block transfer costs.
+
+\paragraph{Actor-Continuity Mutation (ACM).}
+ACM identifies the actor with the largest idle gap between block appearances.
+It moves the later block immediately after the earlier one, reducing the number of idle days (and thus wage payments) for that actor.
+This directly exploits the MSSP cost structure where actor wages dominate total cost.

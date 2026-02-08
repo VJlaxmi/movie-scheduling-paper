@@ -1,0 +1,46 @@
+\section{Discussion}
+\label{sec:discussion}
+
+\subsection{Decomposition Trade-offs}
+
+The SIG-based decomposition exploits a fundamental property of film scheduling: scenes sharing actors and locations are naturally grouped in practice.
+By clustering these scenes into shooting blocks, the upper-level search space reduces from $n!$ scene permutations to $K!$ block permutations ($K \ll n$).
+
+Our results reveal an important trade-off in the number of blocks $K$:
+\begin{itemize}
+    \item When $K$ is \emph{too small} (e.g., $K=3$ for S15), the permutation space ($3!=6$) is exhaustively searchable, and the block-level ordering provides limited flexibility compared to scene-level search ($15! \approx 1.3 \times 10^{12}$). This explains why GA and PSO outperform BDM on S15 and S20.
+    \item When $K$ is \emph{moderate} (e.g., $K=6$ for S25), the decomposition provides a meaningful yet tractable search space ($6!=720$), and the structure-guided ordering yields solutions competitive with scene-level metaheuristics (BDM-AOS within 0.4\% of PSO on S25).
+    \item On \textbf{S10}, all methods achieve similar costs (GA: 11{,}780; BDM-AOS: 11{,}965; gap: 1.6\%), validating that the decomposition preserves solution quality on small instances.
+\end{itemize}
+
+The key insight is that decomposition becomes increasingly valuable as $n$ grows, because the relative advantage of structured search over random permutation search increases exponentially with problem size.
+
+\subsection{Role of Adaptive Operator Selection}
+
+The Q-learning AOS adapts operator selection to search dynamics.
+On S25, BDM-AOS achieves a cost of 36{,}947 (zero variance across seeds) versus BDM-NoAOS's mean of 37{,}479 (std: 923), demonstrating that AOS consistently finds the optimal block ordering while random operator selection exhibits variability.
+The most frequently selected operators across instances are: LAX+ACM (location-aware crossover with actor-continuity mutation) in early phases, and PMX+swap in convergence phases.
+
+\subsection{Multi-Objective Value}
+
+Unlike all prior MSSP work, which optimizes a single cost objective, BDM-AOS provides a Pareto front revealing cost-makespan trade-offs.
+Notably, all algorithms achieve the \emph{same makespan} on each instance (Table~\ref{tab:results}), indicating that the greedy decoder naturally finds schedules with similar temporal spread regardless of scene ordering.
+The Pareto front within BDM-AOS thus reveals alternative schedules that trade modest cost increases for reduced filming duration, which is valuable for production planning.
+
+\subsection{Comparison with Literature}
+
+Our findings are consistent with the MSSP literature:
+\begin{itemize}
+    \item \citet{tekin2023} reported PSO achieving $<1\%$ gaps on small instances, consistent with our observation that PSO and GA converge to similar costs on S10.
+    \item \citet{liu2019} reported TSBM gaps of 0.18\% and PSOBM gaps of 7.92\%, suggesting metaheuristic quality varies with algorithmic design---our BDM-AOS gap of 7.4\% on S25 is comparable.
+    \item The zero variance of BDM-AOS on S10 and S25 indicates the decomposition-guided ordering is robust, unlike GA/PSO whose performance varies across seeds.
+\end{itemize}
+
+\subsection{Limitations and Future Work}
+
+The primary limitation is the block granularity: when Louvain produces too few blocks ($K \leq 4$), the block-permutation search space is too small for evolutionary optimization to provide value over exhaustive enumeration.
+Future work should explore:
+(i)~hierarchical decomposition with sub-block splitting to increase $K$;
+(ii)~hybrid approaches that combine block-level ordering with intra-block scene-level perturbation;
+(iii)~evaluation on larger instances ($n > 50$) where decomposition benefits are expected to dominate;
+(iv)~integration with real production data from film studios.

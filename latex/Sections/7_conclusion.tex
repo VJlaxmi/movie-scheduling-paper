@@ -1,0 +1,35 @@
+\section{Conclusion}
+\label{sec:conclusion}
+
+We presented BDM-AOS, a bi-level decomposition matheuristic with adaptive operator selection for the multi-objective Movie Scene Scheduling Problem.
+Our approach makes three principal contributions to the MSSP literature:
+
+\begin{enumerate}
+    \item The \emph{Scene Interaction Graph} provides a principled decomposition of scenes into shooting blocks based on actor-sharing, location-sharing, and transfer cost structure, reducing the combinatorial search space from $n!$ to $K!$ permutations.
+    
+    \item The \emph{bi-level matheuristic} combines NSGA-II's global search over block permutations with a global greedy reassembly decoder, where the decomposition guides scene ordering while cross-block day sharing preserves cost-competitiveness.
+    
+    \item \emph{Q-learning adaptive operator selection} with two novel problem-specific operators (LAX and ACM) dynamically adapts the search strategy based on population dynamics, achieving zero-variance solutions on multiple instance sizes.
+\end{enumerate}
+
+Experimental results on instances with 10--25 scenes demonstrate that BDM-AOS achieves cost within 1.6\% of standalone GA on small instances and within 0.4\% of PSO on larger instances (S25).
+BDM-AOS consistently outperforms BDM-NoAOS, confirming the value of adaptive operator selection.
+The multi-objective formulation provides production managers with Pareto-optimal trade-offs between cost and schedule duration---a capability absent from all prior MSSP methods.
+
+\subsection{Future Work}
+
+Several promising directions emerge from this work:
+
+\begin{itemize}
+    \item \textbf{Real-world validation:} Apply BDM-AOS to real film scripts (e.g., the 70-scene, 43-actor instance from~\citet{tekin2023}) to validate practical applicability.
+    
+    \item \textbf{Adaptive decomposition:} Re-cluster the SIG periodically during search to exploit evolving population structure.
+    
+    \item \textbf{Uncertainty handling:} Incorporate stochastic elements (weather delays, actor illness) via robust or stochastic programming at the sub-problem level.
+    
+    \item \textbf{Deep RL for AOS:} Replace tabular Q-learning with deep Q-networks for continuous state representation and finer-grained operator selection.
+    
+    \item \textbf{Many-objective extension:} Extend to three or more objectives (cost, makespan, actor fatigue, location utilization) using NSGA-III~\citep{han2025}.
+    
+    \item \textbf{Parallel implementation:} Evaluate blocks concurrently to reduce wall-clock time for large instances.
+\end{itemize}

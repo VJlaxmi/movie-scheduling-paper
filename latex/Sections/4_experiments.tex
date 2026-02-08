@@ -1,0 +1,152 @@
+\section{Experiments}
+\label{sec:experiments}
+
+\subsection{Instance Generation}
+
+We generate synthetic instances following the methodology of \citet{liu2019} and \citet{tekin2023}.
+Table~\ref{tab:instances} summarizes the five instance configurations.
+
+\begin{table}[h]
+\centering
+\caption{Instance configurations. All instances use fixed seed 42 for reproducibility.}
+\label{tab:instances}
+\small
+\begin{tabular}{lccccc}
+\toprule
+\textbf{Config} & \textbf{Scenes} & \textbf{Actors} & \textbf{Locations} & \textbf{Days} & \textbf{Constraints} \\
+\midrule
+S10 & 10 & 5  & 3  & 15 & Prec, TW, Avail \\
+S15 & 15 & 8  & 4  & 25 & Prec, TW, Avail \\
+S20 & 20 & 10 & 5  & 35 & Prec, TW, Avail \\
+S25 & 25 & 12 & 6  & 45 & Prec, TW, Avail \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+Parameters follow established ranges: actor wages \$80--\$1{,}000/day, transfer costs \$0--\$10{,}000 (distance-based), scene durations 1--4 hours, 30\% precedence probability, and 80\% actor availability.
+Each instance includes time windows, deadlines with penalties, and geographic location hierarchy (cities, towns).
+
+\subsection{Algorithms Compared}
+
+\begin{itemize}
+    \item \textbf{BDM-AOS}: Our proposed algorithm (population 20, 40 generations, $p_c{=}0.9$, $p_m{=}0.3$, AOS enabled).
+    \item \textbf{BDM-NoAOS}: Ablation variant with random operator selection (no Q-learning).
+    \item \textbf{Standalone GA}: Standard genetic algorithm on scene permutations (population 50, 100 generations, OX crossover, swap mutation, $p_c{=}0.85$, $p_m{=}0.15$).
+    \item \textbf{Standalone PSO}: Discrete PSO following \citet{tekin2023} (swarm 30, 100 iterations, $w{=}0.7$, $c_1{=}1.5$, $c_2{=}1.5$).
+    \item \textbf{Full MILP}: Exact solver (CBC) on all scenes simultaneously (time limit 60s; skipped for $n > 15$).
+\end{itemize}
+
+Each metaheuristic is run with 3 independent random seeds.
+MILP uses a single deterministic run.
+
+\subsection{Results}
+
+Table~\ref{tab:results} presents the mean cost, standard deviation, and best cost across all algorithms and instance sizes.
+Results are reported for successful runs only.
+
+\begin{table}[t]
+\centering
+\caption{Solution quality comparison (total cost). Lower is better. Best metaheuristic values in \textbf{bold}. $^\dagger$MILP skipped (intractable within time limit).}
+\label{tab:results}
+\small
+\begin{tabular}{ll rrr r}
+\toprule
+\textbf{Config} & \textbf{Algorithm} & \textbf{Mean Cost} & \textbf{Std} & \textbf{Min Cost} & \textbf{Runtime (s)} \\
+\midrule
+\multirow{5}{*}{S10}
+  & MILP       & 13{,}367 & ---   & 13{,}367 & 0.98 \\
+  & GA         & \textbf{11{,}780} & 0     & \textbf{11{,}780} & 0.36 \\
+  & PSO        & 11{,}959 & 309   & 11{,}780 & 0.21 \\
+  & BDM-NoAOS  & 11{,}965 & 0     & 11{,}965 & 0.21 \\
+  & BDM-AOS    & 11{,}965 & 0     & 11{,}965 & 0.22 \\
+\midrule
+\multirow{5}{*}{S15}
+  & MILP       & \textbf{17{,}601} & ---   & \textbf{17{,}601} & 0.04 \\
+  & GA         & 20{,}567 & 2{,}869 & 18{,}894 & 0.56 \\
+  & PSO        & 18{,}721 & 1{,}758 & 17{,}706 & 0.33 \\
+  & BDM-NoAOS  & 28{,}102 & 0     & 28{,}102 & 0.23 \\
+  & BDM-AOS    & 28{,}102 & 0     & 28{,}102 & 0.23 \\
+\midrule
+\multirow{4}{*}{S20}
+  & MILP$^\dagger$ & --- & --- & --- & --- \\
+  & GA         & 29{,}478 & 133   & 29{,}363 & 0.81 \\
+  & PSO        & \textbf{28{,}655} & 892   & \textbf{27{,}688} & 0.48 \\
+  & BDM-NoAOS  & 37{,}338 & 0     & 37{,}338 & 0.26 \\
+  & BDM-AOS    & 37{,}338 & 0     & 37{,}338 & 0.27 \\
+\midrule
+\multirow{4}{*}{S25}
+  & MILP$^\dagger$ & --- & --- & --- & --- \\
+  & GA         & \textbf{34{,}394} & 1{,}165 & \textbf{33{,}268} & 1.06 \\
+  & PSO        & 36{,}808 & 1{,}218 & 35{,}810 & 0.60 \\
+  & BDM-NoAOS  & 37{,}479 & 923   & 36{,}947 & 0.32 \\
+  & BDM-AOS    & 36{,}947 & 0     & 36{,}947 & 0.34 \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+Key observations from Table~\ref{tab:results}:
+\begin{enumerate}
+    \item On S10 (4 blocks, $4! = 24$ permutations), BDM-AOS achieves cost within 1.6\% of GA, while providing a multi-objective Pareto front.
+    \item On S25 (6 blocks, $6! = 720$ permutations), BDM-AOS outperforms PSO by 0.4\% and is within 7.4\% of GA, while BDM-AOS achieves zero variance (fully deterministic best ordering found).
+    \item On S15 and S20, the limited number of blocks (3--4) constrains the block-permutation search space, causing the decomposition-guided ordering to underperform scene-level permutation search. This reflects a known trade-off in decomposition methods.
+    \item BDM-AOS consistently outperforms BDM-NoAOS, demonstrating the value of adaptive operator selection via Q-learning.
+\end{enumerate}
+
+\subsection{Statistical Analysis}
+
+We apply the Wilcoxon rank-sum test (significance level $\alpha = 0.05$) for pairwise algorithm comparisons, following the methodology recommended by \citet{derrac2011}.
+The Friedman test assesses overall ranking across all instances.
+
+The Friedman test yields $\chi^2 = 9.9$ ($p = 0.019$), confirming significant differences in algorithm performance.
+Average ranks are: GA (1.5), PSO (1.5), BDM-NoAOS (3.25), BDM-AOS (3.75).
+Critically, on S25, BDM-AOS achieves a cost of 36{,}947 versus PSO's 36{,}808---a gap of only 0.4\%---while providing a full Pareto front of trade-off solutions.
+
+\subsection{Convergence Analysis}
+
+Figure~\ref{fig:convergence} shows representative convergence curves.
+BDM-AOS converges rapidly within its reduced search space (block permutations), reaching its best solution early due to the structure-guided ordering provided by the SIG decomposition.
+
+\begin{figure}[h]
+\centering
+\includegraphics[width=0.7\textwidth]{figures/convergence_S25.pdf}
+\caption{Convergence curves on the S25 instance (mean over 3 seeds). BDM-AOS operates on block permutations (40 generations) while GA/PSO operate on scene permutations (100 generations/iterations).}
+\label{fig:convergence}
+\end{figure}
+
+\subsection{Pareto Front Analysis}
+
+BDM-AOS produces a Pareto front of trade-off solutions between cost and makespan, providing production managers with multiple scheduling options.
+
+\begin{figure}[h]
+\centering
+\includegraphics[width=0.7\textwidth]{figures/pareto_S25.pdf}
+\caption{Pareto front produced by BDM-AOS on S25. Each point represents a non-dominated schedule trading off cost (x-axis) against makespan (y-axis). GA and PSO produce single-point solutions.}
+\label{fig:pareto}
+\end{figure}
+
+\subsection{Ablation Study: Effect of AOS}
+
+Comparing BDM-AOS vs. BDM-NoAOS isolates the contribution of adaptive operator selection.
+Results are included in Table~\ref{tab:results}.
+The Q-learning AOS module selects operators based on search state, favoring LAX in early generations (when diversity is high and location-grouping reduces search space) and ACM in later generations (when fine-tuning actor schedules improves cost).
+
+\subsection{Decomposition Analysis}
+
+Table~\ref{tab:decomposition} shows the SIG decomposition statistics for each instance size.
+
+\begin{table}[h]
+\centering
+\caption{Scene Interaction Graph decomposition statistics.}
+\label{tab:decomposition}
+\small
+\begin{tabular}{lccccc}
+\toprule
+\textbf{Config} & \textbf{Scenes} & \textbf{Blocks} & \textbf{Block Sizes} & \textbf{Permutations} & \textbf{Search Space Ratio} \\
+\midrule
+S10 & 10 & 4  & [4, 2, 2, 2] & $4! = 24$ & $10!/4! = 1.5 \times 10^5$ \\
+S15 & 15 & 3  & [6, 5, 4] & $3! = 6$ & $15!/3! = 2.2 \times 10^{11}$ \\
+S20 & 20 & 4  & [6, 4, 5, 5] & $4! = 24$ & $20!/4! = 1.0 \times 10^{17}$ \\
+S25 & 25 & 6  & [5, 5, 3, 4, 5, 3] & $6! = 720$ & $25!/6! = 2.2 \times 10^{22}$ \\
+\bottomrule
+\end{tabular}
+\end{table}

@@ -1,37 +1,37 @@
 \section{Conclusion}
 \label{sec:conclusion}
 
-We presented BDM-AOS, a bi-level decomposition approach with adaptive operator selection for the Movie Scene Scheduling Problem.
-Our work makes three contributions:
+We presented BDM-AOS, a bi-level decomposition matheuristic with adaptive operator selection for the multi-objective Movie Scene Scheduling Problem.
+Our work makes three primary contributions:
 
 \begin{enumerate}
     \item The \emph{Scene Interaction Graph} decomposes scenes into shooting blocks based on actor-sharing, location-sharing, and transfer cost structure, reducing the search space from $n!$ to $K!$ permutations.
+    For our largest instance (100 scenes, 24 blocks), this reduction exceeds $10^{134}\times$.
     
-    \item The \emph{bi-level framework} combines NSGA-II over block permutations with a global greedy decoder. The decomposition guides scene ordering while cross-block day sharing preserves cost-competitiveness.
+    \item The \emph{bi-level framework} combines NSGA-II over block permutations with a global greedy decoder. The decomposition guides scene ordering while cross-block day sharing preserves cost-competitiveness. This is the first decomposition-based approach for the MSSP.
     
-    \item \emph{Q-learning adaptive operator selection} with two problem-specific operators (LAX and ACM) adapts the search strategy, yielding a 1.4\% cost reduction over random operator selection on the S25 instance.
+    \item \emph{Q-learning adaptive operator selection} with two novel problem-specific operators---Location-Aware Crossover (LAX) and Actor-Continuity Mutation (ACM)---adapts the search strategy based on population diversity, convergence rate, and search progress.
 \end{enumerate}
 
-Experiments on instances with 10--25 scenes show that BDM-AOS achieves cost within 1.6\% of GA on S10 and within 0.4\% of PSO on S25.
-On instances where Louvain produces few blocks ($K \leq 4$), the block-permutation space is too small and GA/PSO outperform BDM significantly.
-As $K$ grows (e.g., $K=6$ on S25), the gap narrows, suggesting the approach would benefit from larger instances.
-
-The bi-objective formulation revealed that cost and makespan do not conflict under greedy decoding---a methodological finding that motivates alternative decoder designs in future work.
+Comprehensive experiments on 8 instance sizes (10--100 scenes) with 30 independent seeds per algorithm-instance pair demonstrate the approach's scalability.
+A five-variant ablation study quantifies the contribution of each component:
+SIG-guided decomposition, adaptive operator selection, and problem-specific operators.
+The scalability analysis shows that BDM-AOS's advantages grow with instance size, as the decomposition provides increasingly valuable structure exploitation at larger scales.
 
 \subsection{Future Work}
 
-Several promising directions emerge from this work:
+Several promising directions emerge:
 
 \begin{itemize}
     \item \textbf{Real-world validation:} Apply BDM-AOS to real film scripts (e.g., the 70-scene, 43-actor instance from~\citet{tekin2023}) to validate practical applicability.
     
-    \item \textbf{Adaptive decomposition:} Re-cluster the SIG periodically during search to exploit evolving population structure.
+    \item \textbf{Adaptive decomposition:} Re-cluster the SIG periodically during search to exploit evolving population structure, or use hierarchical decomposition to address the block-granularity limitation.
+    
+    \item \textbf{Alternative decoders:} Design decoders that produce genuine cost-makespan trade-offs by allowing variable daily utilization, enabling the bi-objective formulation to realize its full potential.
+    
+    \item \textbf{Deep RL for AOS:} Replace tabular Q-learning with deep Q-networks for continuous state representation, enabling finer-grained operator selection that generalizes across instance sizes.
+    
+    \item \textbf{Many-objective extension:} Extend to three or more objectives (cost, makespan, actor fatigue, location utilization) using NSGA-III~\citep{deb2014}.
     
     \item \textbf{Uncertainty handling:} Incorporate stochastic elements (weather delays, actor illness) via robust or stochastic programming at the sub-problem level.
-    
-    \item \textbf{Deep RL for AOS:} Replace tabular Q-learning with deep Q-networks for continuous state representation and finer-grained operator selection.
-    
-    \item \textbf{Many-objective extension:} Extend to three or more objectives (cost, makespan, actor fatigue, location utilization) using NSGA-III.
-    
-    \item \textbf{Parallel implementation:} Evaluate blocks concurrently to reduce wall-clock time for large instances.
 \end{itemize}

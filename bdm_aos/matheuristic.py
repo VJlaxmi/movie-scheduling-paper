@@ -10,6 +10,7 @@ Core algorithm combining:
 import random
 import time
 import numpy as np
+import networkx as nx
 from typing import Dict, List, Tuple, Set, Optional
 from copy import deepcopy
 
@@ -45,6 +46,9 @@ class BDM_AOS:
                  louvain_resolution: float = 1.0,
                  milp_time_limit: int = 60,
                  use_aos: bool = True,
+                 use_sig: bool = True,
+                 use_spec_ops: bool = True,
+                 flat_mode: bool = False,
                  seed: int = 42):
         self.population_size = population_size
         self.generations = generations
@@ -56,6 +60,9 @@ class BDM_AOS:
         self.louvain_resolution = louvain_resolution
         self.milp_time_limit = milp_time_limit
         self.use_aos = use_aos
+        self.use_sig = use_sig          # False = random blocks (BDM-NoSIG)
+        self.use_spec_ops = use_spec_ops  # False = no LAX/ACM (BDM-NoSpecOps)
+        self.flat_mode = flat_mode       # True = NSGA-II on scenes directly (BDM-Flat)
         self.seed = seed
 
         self.rng = random.Random(seed)
@@ -83,16 +90,32 @@ class BDM_AOS:
     def _setup_blocks(self, inst: MSSPInstance):
         """Build SIG, decompose into blocks, compute block metadata."""
         self.inst = inst
-        # Target blocks of 2-4 scenes for meaningful intra-block optimization
-        # With n blocks, search space = n! permutations
-        # Need enough blocks for GA search but not too many single-scene blocks
-        min_blocks = max(3, inst.num_scenes // 5)
-        max_block_size = max(3, min(6, inst.num_scenes // 2))
-        
-        self.blocks, self.graph = self.sig.decompose(
-            inst, resolution=self.louvain_resolution,
-            min_blocks=min_blocks, max_block_size=max_block_size
-        )
+
+        if self.flat_mode:
+            # Flat mode: each scene is its own "block"
+            self.blocks = [[s] for s in inst.scenes]
+            self.graph = nx.Graph()
+            self.graph.add_nodes_from(inst.scenes)
+        elif not self.use_sig:
+            # Random blocks (BDM-NoSIG): random partitioning, no SIG
+            rng = random.Random(self.seed + 999)
+            scenes_shuffled = list(inst.scenes)
+            rng.shuffle(scenes_shuffled)
+            block_size = max(2, inst.num_scenes // max(3, inst.num_scenes // 5))
+            self.blocks = []
+            for i in range(0, len(scenes_shuffled), block_size):
+                self.blocks.append(sorted(scenes_shuffled[i:i+block_size]))
+            self.graph = nx.Graph()
+            self.graph.add_nodes_from(inst.scenes)
+        else:
+            # Standard SIG decomposition
+            min_blocks = max(3, inst.num_scenes // 5)
+            max_block_size = max(3, min(6, inst.num_scenes // 2))
+
+            self.blocks, self.graph = self.sig.decompose(
+                inst, resolution=self.louvain_resolution,
+                min_blocks=min_blocks, max_block_size=max_block_size
+            )
 
         # Compute block metadata
         self.block_actors = {}
@@ -105,7 +128,6 @@ class BDM_AOS:
                 for loc in inst.scene_locations.get(s, []):
                     loc_counts[loc] = loc_counts.get(loc, 0) + 1
             self.block_actors[idx] = actors
-            # Primary location = most frequent
             if loc_counts:
                 self.block_locations[idx] = max(loc_counts, key=loc_counts.get)
 
@@ -391,9 +413,19 @@ class BDM_AOS:
                 state_info = (gen, self.generations, diversity,
                               abs(improvement_rate), quality_gap)
                 cx_op, mut_op, action_idx = self.aos.select_action(*state_info)
+                # If spec ops disabled, override LAX/ACM
+                if not self.use_spec_ops:
+                    if cx_op == "lax":
+                        cx_op = self.rng.choice(["pmx", "ox"])
+                    if mut_op == "acm":
+                        mut_op = self.rng.choice(["swap", "block_swap"])
             else:
-                cx_op = self.rng.choice(["pmx", "ox", "lax"])
-                mut_op = self.rng.choice(["swap", "block_swap", "acm"])
+                if self.use_spec_ops:
+                    cx_op = self.rng.choice(["pmx", "ox", "lax"])
+                    mut_op = self.rng.choice(["swap", "block_swap", "acm"])
+                else:
+                    cx_op = self.rng.choice(["pmx", "ox"])
+                    mut_op = self.rng.choice(["swap", "block_swap"])
                 action_idx = 0
 
             # Generate offspring

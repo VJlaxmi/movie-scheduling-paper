@@ -1,37 +1,64 @@
 \section{Related Work}
 \label{sec:related}
 
+We survey five bodies of literature that inform the design of BDM-AOS:
+(i)~exact methods for the MSSP,
+(ii)~metaheuristic approaches to scene scheduling,
+(iii)~multi-objective evolutionary optimization,
+(iv)~decomposition-based optimization and community detection, and
+(v)~adaptive operator selection and reinforcement learning.
+
 \subsection{Exact Methods for the MSSP}
 
-The MSSP was first formalized as an integer linear program by \citet{zhen2014}, who minimized actor wages and transfer costs using CPLEX.
-\citet{liu2019} extended this ILP with 24 constraints covering actor availability, location compatibility, and scene-day assignments, solving instances up to 15 scenes optimally before CPLEX exceeded 7{,}200-second time limits.
+The MSSP was first formalized as a combinatorial optimization problem with integer linear programming~\citep{bomsdorf2008, degraeve2007}.
+\citet{zhen2014} formulated a cost-minimization ILP and solved it with CPLEX.
+\citet{liu2019} extended this model with 24 constraints covering actor availability, location compatibility, and scene-day assignments, solving instances up to 15 scenes optimally before CPLEX exceeded 7{,}200-second time limits.
 \citet{tekin2023} developed the most comprehensive MILP formulation to date, with 31 constraints including precedence relations, time windows, and actor blocking periods.
-Using CPLEX on 160 benchmark instances, Tekin showed that exact solutions become impractical beyond 25 scenes with blocking-time constraints, motivating the need for metaheuristic approaches.
+Using CPLEX on 160 benchmark instances, Tekin showed that exact solutions become impractical beyond 25 scenes with blocking-time constraints.
+This NP-hard complexity profile~\citep{garey1979} motivates metaheuristic and matheuristic approaches.
 
 \subsection{Metaheuristic Approaches}
 
 \citet{liu2019} introduced a Tabu Search-based metaheuristic (TSBM) achieving average gaps of 0.18\% from optimal on instances with 10--40 scenes and 3--20 actors, along with a PSO-based method (PSOBM) with 7.92\% average gaps.
-\citet{long2020} added an Ant Colony Optimization method (ACOBM) and showed ACO outperformed both TSBM and PSOBM in solution quality on larger instances.
+\citet{long2020} added an Ant Colony Optimization method (ACOBM) and showed ACO outperformed both TSBM and PSOBM in solution quality on larger instances, paralleling results from broader swarm intelligence literature~\citep{kennedy1995, clerc2002, dorigo2006}.
 \citet{tekin2023} developed a discrete PSO with binary position representation and feasibility-based repair, achieving less than 1\% deviation from optimal on 106 out of 160 instances and finding better solutions than CPLEX (which timed out) on a real film script with 70 scenes and 43 actors.
 
 All existing metaheuristics operate on flat scene permutations without exploiting the coupling structure between scenes.
 None employ multi-objective optimization, decomposition strategies, or adaptive operator selection.
+Genetic algorithm operators for permutation-based problems are well-studied~\citep{oliver1987, syswerda1991, whitley1994}, but no MSSP-specific crossover or mutation operators have been proposed prior to this work.
 
-\subsection{Multi-Objective Scheduling}
+\subsection{Multi-Objective Evolutionary Optimization}
 
-Multi-objective evolutionary algorithms have been applied to various scheduling problems.
-\citet{deb2002} introduced NSGA-II, which remains a standard for bi-objective optimization.
+Multi-objective evolutionary algorithms (MOEAs) have been widely applied to scheduling problems~\citep{deb2001, coello2007}.
+\citet{deb2002} introduced NSGA-II, which remains the standard for bi-objective optimization;
+\citet{deb2014} extended it to many-objective problems via reference-point-based sorting (NSGA-III).
 In a related film-production context, \citet{han2025} applied NSGA-III to visual effects composition---a distinct problem from scene scheduling---using Wilcoxon and Friedman tests for algorithm comparison.
 
-\subsection{Matheuristics and Adaptive Operator Selection}
+Performance assessment of MOEAs relies on quality indicators such as the hypervolume indicator~\citep{zitzler2003, ishibuchi2017} and inverted generational distance~\citep{zitzler2000, audet2021}.
+These metrics enable rigorous comparison of Pareto fronts across algorithms.
+We adopt both indicators in our experimental evaluation (Section~\ref{sec:experiments}).
 
-Matheuristics---hybrids of mathematical programming and metaheuristics---have shown strong performance on combinatorial optimization problems~\citep{talbi2009, maniezzo2010}.
+\subsection{Decomposition and Community Detection}
+
+Decomposition approaches partition large optimization problems into coordinated sub-problems.
+\citet{zhang2007} introduced MOEA/D, a decomposition-based MOEA that has become a leading paradigm.
+Graph-based decomposition exploits problem structure through community detection algorithms~\citep{fortunato2010, girvan2002}, with the Louvain method~\citep{blondel2008} being particularly effective for modularity maximization.
+General decomposition frameworks for large-scale optimization~\citep{rahimian2017} demonstrate that structure-aware partitioning consistently outperforms random decomposition.
+
+Matheuristics---hybrids of mathematical programming and metaheuristics---have shown strong performance on combinatorial optimization~\citep{maniezzo2010, jourdan2009}.
 Decomposition-based matheuristics solve sub-problems exactly while using metaheuristics for global coordination.
+Resource-constrained project scheduling~\citep{hartmann2010, kolisch2006, pinedo2016} provides the closest methodological parallel, though film scheduling introduces unique constraints (actor availability, location dependencies, cost structures) not present in standard RCPSP formulations.
 To our knowledge, no matheuristic has been applied to the MSSP.
 
-Adaptive operator selection (AOS) uses online learning to choose effective operators during search.
-\citet{thierens2005} introduced credit assignment for operator selection.
-Q-learning-based AOS~\citep{li2014, fialho2008} adapts operator probabilities based on search progress, population diversity, and improvement rate.
+\subsection{Adaptive Operator Selection and Reinforcement Learning}
+
+Adaptive operator selection (AOS) uses online learning to choose effective operators during search~\citep{karafotias2015}.
+\citet{maturana2010} proposed autonomous operator management for EAs, showing that adaptive selection consistently outperforms fixed operator strategies.
+Biased random-key GAs~\citep{goncalves2011} demonstrate how problem-specific encodings improve search performance.
+
+Q-learning-based AOS~\citep{watkins1992, sutton1998} adapts operator probabilities based on search state features---population diversity, improvement rate, and convergence stage.
+This state-action framework enables the search process to learn which operators are most effective in different search contexts, as demonstrated by~\citet{li2014} and~\citet{fialho2008}.
+Statistical testing protocols for comparing stochastic algorithms~\citep{garcia2009, demsar2006} require non-parametric methods such as Friedman tests with Holm's post-hoc correction~\citep{holm1979}.
 
 \subsection{Positioning of This Work}
 
@@ -50,12 +77,16 @@ BDM-AOS is the first MSSP approach combining (i)~decomposition via graph cluster
 \midrule
 MILP exact model          & \checkmark & \checkmark & \checkmark & \checkmark \\
 Single metaheuristic      & TS, PSO    & TS, PSO, ACO & PSO       & ---        \\
-Decomposition             & ---        & ---        & ---        & \checkmark \\
+Decomposition             & ---        & ---        & ---        & SIG+Louvain \\
 Bi-level framework        & ---        & ---        & ---        & \checkmark \\
-Multi-objective            & ---        & ---        & ---        & \checkmark \\
-Adaptive operator select. & ---        & ---        & ---        & \checkmark \\
+Multi-objective            & ---        & ---        & ---        & NSGA-II \\
+Adaptive operator select. & ---        & ---        & ---        & Q-learning \\
 Problem-specific operators & ---       & ---        & ---        & LAX, ACM   \\
-Statistical testing        & ---       & ---        & ---        & \checkmark \\
+Instances tested           & 15        & 40         & 160        & 8 configs  \\
+Max scenes                 & 40        & 40         & 70         & 100 \\
+Independent seeds          & 1         & 1          & 1          & 30 \\
+Statistical testing        & ---       & ---        & ---        & Friedman+Holm \\
+Quality indicators         & Gap\%     & Gap\%      & Gap\%      & HV, IGD \\
 \bottomrule
 \end{tabular}
 \end{table}

@@ -17,9 +17,10 @@ def main():
     print("BDM-AOS Experiment Suite")
     print("=" * 60)
 
-    configs = ["S10", "S15", "S20", "S25"]
-    algorithms = ["GA", "PSO", "MILP", "BDM_NoAOS", "BDM_AOS"]
-    num_seeds = 3
+    configs = ["S10", "S15", "S20", "S25", "S30", "S50", "S75", "S100"]
+    algorithms = ["GA", "PSO", "MILP", "BDM_NoAOS", "BDM_AOS",
+                  "BDM_NoSIG", "BDM_NoSpecOps", "BDM_Flat"]
+    num_seeds = 30
 
     print(f"Configs: {configs}")
     print(f"Algorithms: {algorithms}")

@@ -1,0 +1,37 @@
+\section*{Reproducibility Statement}
+\label{sec:reproducibility}
+
+We detail the steps taken to ensure full reproducibility of our results.
+
+\paragraph{Code and Data.}
+All source code, synthetic data generators, experiment scripts, and analysis pipelines are publicly available at \url{https://github.com/VJlaxmi/movie-scheduling-paper}.
+The repository includes:
+\begin{itemize}
+    \item Complete BDM-AOS implementation with all ablation variants ({\ttfamily bdm\_aos/} package);
+    \item Baseline implementations (GA, PSO, MILP) using the same evaluation framework;
+    \item Synthetic instance generator with fixed seed ({\ttfamily seed=42}) for deterministic instance creation;
+    \item Experiment runner with 30 independent seeds per algorithm-instance pair;
+    \item Analysis scripts that reproduce all tables and figures from raw JSON results.
+\end{itemize}
+
+\paragraph{Instance Generation.}
+All 8 benchmark instances (S10--S100) are generated deterministically from a single master seed.
+Instance parameters (number of scenes, actors, locations, planning horizon) are documented in Table~\ref{tab:instances}.
+The generator produces consistent actor availability calendars, location compatibility matrices, and scene-actor assignment matrices.
+
+\paragraph{Algorithm Parameters.}
+All algorithm hyperparameters are fixed throughout the experiments and documented in Section~\ref{sec:experiments}.
+BDM-AOS uses: population size $N=20$, generations $G=40$, crossover rate $p_c=0.9$, mutation rate $p_m=0.3$, MILP sub-problem time limit 10s.
+GA uses: population size 50, 100 generations, $p_c=0.85$, $p_m=0.15$.
+PSO uses: swarm size 30, 100 iterations.
+MILP uses: 60-second time limit with CBC solver.
+
+\paragraph{Statistical Protocol.}
+Each algorithm is run 30 times with seeds 1--30 on each instance.
+We report mean $\pm$ standard deviation for cost and makespan.
+Statistical significance is assessed using Friedman tests with Holm's post-hoc correction at significance level $\alpha = 0.05$.
+Quality indicators (hypervolume, inverted generational distance) use a common reference point derived from the worst values across all algorithms.
+
+\paragraph{Computational Environment.}
+All experiments were run on a single machine with Python 3.14 and the following key libraries: NumPy, SciPy, pandas, NetworkX, python-louvain (community detection), Pyomo with CBC solver, and Matplotlib.
+Runtime measurements use Python's {\ttfamily time.time()} for wall-clock timing.

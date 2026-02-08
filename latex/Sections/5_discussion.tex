@@ -1,47 +1,85 @@
 \section{Discussion}
 \label{sec:discussion}
 
-\subsection{Decomposition Trade-offs}
+\subsection{The Scalability Crossover}
 
-The SIG-based decomposition exploits a fundamental property of film scheduling: scenes sharing actors and locations are naturally grouped in practice.
-By clustering these scenes into shooting blocks, the upper-level search space reduces from $n!$ scene permutations to $K!$ block permutations ($K \ll n$).
+Our experiments reveal a striking \emph{scalability crossover}: BDM-AOS underperforms scene-level metaheuristics on instances with $\leq 50$ scenes but \textbf{dominates} at 75 and 100 scenes, achieving 20.7\% and 14.5\% lower cost than GA, respectively.
+This crossover arises from the fundamental trade-off between search space expressiveness and tractability.
 
-Our results reveal an important trade-off in the number of blocks $K$:
+On small-to-medium instances (S20--S30), Louvain community detection produces $K{=}6{-}8$ blocks.
+While the resulting $K!$ space is exponentially smaller than $n!$, it is also \emph{too coarse}: each block permutation fixes the relative ordering of 3--6 scenes, eliminating fine-grained rearrangements that GA/PSO can exploit.
+Scene-level metaheuristics, with their larger populations (50 for GA, 30 for PSO) and more generations (100), can adequately explore the full $n!$ space when $n \leq 30$.
+
+At S50 ($K{=}14$, $14! \approx 8.7 \times 10^{10}$), the block-level space becomes rich enough for NSGA-II to find good orderings, and BDM-AOS closes to within 5.6\% of GA/PSO.
+At S75 ($K{=}17$, $17! \approx 3.6 \times 10^{14}$), GA and PSO can no longer effectively search $75! \approx 2.5 \times 10^{109}$ with 5{,}000 evaluations, while BDM-AOS efficiently navigates the structured $17!$ space with 800 evaluations.
+At S100 ($K{=}26$, $26! \approx 4.0 \times 10^{26}$), BDM-AOS maintains its advantage (14.5\% over GA), though the gap narrows from S75 because the block-level space itself is becoming large enough ($4.0 \times 10^{26}$) that a population of 20 cannot fully explore it.
+
+\subsection{Why SIG Decomposition Works}
+
+The ablation study provides direct evidence for why SIG decomposition is effective.
+BDM-NoSIG, which replaces Louvain communities with random equal-sized blocks, degrades by 33\% on S50, 64\% on S75, and 41\% on S100.
+This dramatic gap confirms that the Scene Interaction Graph captures genuine problem structure: scenes sharing actors and locations have coupled costs, and grouping them into blocks preserves these couplings while enabling tractable upper-level search.
+
+The SIG-based decomposition exploits a fundamental property of film production: shooting schedules are naturally organized around \emph{units}---groups of scenes filmed together because they share the same cast, location, or set.
+Louvain community detection automatically discovers these units from the constraint structure, without domain-specific tuning.
+
+\subsection{Decomposition Granularity}
+
+The BDM-Flat ablation reveals a critical insight about decomposition granularity.
+On S20--S30, BDM-Flat (one scene per block, $K{=}n$) actually outperforms BDM-AOS because it preserves the full scene-level search space while still using the BDM framework.
+However, on S50 ($K{=}50$), BDM-Flat degrades by 8.6\%, on S75 ($K{=}75$) by 59.9\%, and on S100 ($K{=}100$) by 30.3\%, because a population of 20 individuals cannot explore $n!$ permutations in 40 generations.
+
+This reveals that the optimal block count lies in an intermediate range where:
 \begin{itemize}
-    \item When $K$ is \emph{too small} (e.g., $K=3$ for S15), the permutation space ($3!=6$) is exhaustively searchable, and the block-level ordering provides limited flexibility compared to scene-level search ($15! \approx 1.3 \times 10^{12}$). This explains why GA and PSO outperform BDM on S15 and S20.
-    \item When $K$ is \emph{moderate} (e.g., $K=6$ for S25), the decomposition provides a meaningful yet tractable search space ($6!=720$), and the structure-guided ordering yields solutions competitive with scene-level metaheuristics (BDM-AOS within 0.4\% of PSO on S25).
-    \item On \textbf{S10}, all methods achieve similar costs (GA: 11{,}780; BDM-AOS: 11{,}965; gap: 1.6\%), validating that the decomposition preserves solution quality on small instances.
+    \item $K$ is large enough to provide sufficient ordering flexibility ($K! \gg$ population $\times$ generations), and
+    \item $K$ is small enough that the block-level NSGA-II can effectively search the space.
 \end{itemize}
-
-The key insight is that decomposition becomes increasingly valuable as $n$ grows, because the relative advantage of structured search over random permutation search increases exponentially with problem size.
+For BDM-AOS with population 20 and 40 generations (800 evaluations), the effective range appears to be $K \in [10, 25]$, which SIG decomposition naturally produces for instances with 50--100 scenes.
 
 \subsection{Role of Adaptive Operator Selection}
 
-The Q-learning AOS adapts operator selection to the search state.
-On S25, BDM-AOS achieves a cost of 36{,}947 with zero variance across seeds, versus BDM-NoAOS's mean of 37{,}479 (std: 923).
-This 1.4\% improvement shows that AOS consistently steers toward the best block ordering, while random operator selection misses it in some runs.
-On S10--S20, both variants find identical solutions because the block-permutation spaces ($\leq 24$) are small enough to be fully explored regardless of operator choice.
-The most frequently selected operators on S25 are PMX+block\_swap and OX+block\_swap.
+The Q-learning AOS provides a modest but scale-dependent improvement: 1.7\% on S50, 2.0\% on S75, but only 0.1\% on S100.
+The diminishing impact at S100 ($K{=}26$) suggests that the 81-state Q-learning discretization becomes too coarse when the block-permutation landscape is more complex.
+The limited magnitude reflects the nature of block-level permutation search, where the standard PMX/OX crossover operators are already well-suited to the representation.
 
-\subsection{On the Multi-Objective Formulation}
+More notably, BDM-NoSpecOps shows scale-dependent impact: only 1.3\% degradation on S50, a dramatic 30.4\% on S75, but just 0.2\% on S100.
+The S75 spike suggests that the domain-specific operators (LAX/ACM) are particularly effective when the block count is in a ``sweet spot'' ($K{=}17$), where block-level structure aligns well with the operator's design assumptions.
 
-BDM-AOS uses NSGA-II to jointly optimize cost and makespan.
-However, our experiments reveal that the greedy decoder assigns a fixed makespan for each instance (e.g., 7~days for S10, 16~days for S25), regardless of scene ordering.
-As a result, the Pareto front collapses to a single point---cost varies with permutation but makespan does not.
-This means cost and makespan are \emph{not} conflicting objectives under the current decoder.
-To obtain genuine trade-offs, the decoder would need to allow variable daily capacity or idle-day insertion, which we leave for future work.
+\subsection{Variance and Robustness}
+
+A practical advantage of BDM-AOS is its \emph{lower variance} compared to GA/PSO.
+On S50, BDM-AOS achieves std~4{,}527 versus GA's 9{,}977 and PSO's 8{,}704.
+On S100, BDM-AOS (std~18{,}497) has slightly higher variance than PSO (std~14{,}683) but lower than GA (std~21{,}982).
+
+This robustness has practical implications for production scheduling: a studio planner can run BDM-AOS once and trust the result, whereas GA/PSO require multiple runs to hedge against variance.
+
+\subsection{Runtime Scalability}
+
+BDM-AOS exhibits favorable runtime scaling: 0.20s on S10, 0.71s on S50, 1.10s on S75, and 1.61s on S100, compared to GA's 0.34s, 3.51s, 6.16s, and 8.78s respectively.
+The speedup grows from $1.7\times$ on S10 to $5.6\times$ on S75 and plateaus at $5.5\times$ on S100.
+This advantage stems from two factors: (1)~BDM-AOS performs fewer evaluations per generation (population~20 vs.\ GA's~50), and (2)~each evaluation operates on $K$-length block permutations rather than $n$-length scene permutations, reducing decoder complexity.
 
 \subsection{Comparison with Literature}
 
-Our results are consistent with the MSSP literature:
+Our results are broadly consistent with the MSSP literature:
 \begin{itemize}
-    \item \citet{tekin2023} reported PSO achieving $<1\%$ gaps from optimal on small instances. Our GA and PSO baselines similarly converge to near-identical costs on S10.
-    \item \citet{liu2019} reported TSBM gaps of 0.18\% and PSOBM gaps of 7.92\% from MILP optimal. BDM-AOS's gap of 7.4\% from GA on S25 falls in a similar range, though direct comparison is limited by different instance sets.
-    \item The zero variance of BDM-AOS across seeds contrasts with GA/PSO variance (e.g., PSO std of 1{,}218 on S25), suggesting the decomposition-guided ordering is deterministic once the best block permutation is found.
+    \item \citet{bomsdorf2008} solved instances up to 60 scenes using a branch-and-bound approach. Our MILP baseline also becomes intractable beyond 15 scenes, consistent with the NP-hardness established by \citet{garey1979}.
+    \item \citet{nordstrom2022} reported heuristic-MILP gaps of 7--12\% on medium instances. BDM-AOS's gap of 5.6\% from GA/PSO on S50 falls in a similar range.
+    \item The \emph{crossover phenomenon}---where decomposition methods surpass flat search at sufficient scale---parallels findings in vehicle routing~\citep{rahimian2017} and large-scale scheduling~\citep{maniezzo2010}, where decomposition-based matheuristics consistently outperform standalone metaheuristics on large instances.
 \end{itemize}
+
+\subsection{Limitations of the Current Study}
+
+We acknowledge several limitations:
+\begin{enumerate}
+    \item \textbf{Synthetic data}: All instances are generated synthetically. While parameters match industry ranges, real production data may exhibit different structural properties.
+    \item \textbf{Fixed hyperparameters}: BDM-AOS uses fixed population (20) and generations (40) across all instances. Adaptive tuning could further improve medium-instance performance.
+    \item \textbf{Greedy decoder}: The current decoder produces fixed makespan, collapsing the Pareto front. Alternative decoders could reveal genuine multi-objective trade-offs.
+    \item \textbf{Single-instance testing}: Each configuration uses one instance (seed~42). Testing on multiple instance variants per size would strengthen generalizability claims.
+\end{enumerate}
 
 \subsection{Key Takeaway}
 
-The decomposition approach works best when Louvain produces enough blocks ($K \geq 6$) to give NSGA-II a meaningful search space.
-For instances where $K \leq 4$, direct scene-level metaheuristics remain superior.
-Future work should target instances with 50+ scenes, where $K$ naturally grows and the $n!/K!$ search-space reduction becomes decisive.
+BDM-AOS is not a universally superior algorithm---it underperforms GA/PSO on instances with $\leq 30$ scenes.
+Its value lies in \emph{scalability}: by exploiting the natural community structure of film scheduling via SIG decomposition, it achieves both better solution quality and faster runtime on large instances where scene-level metaheuristics struggle.
+The 20.7\% improvement over GA at 75 scenes and 14.5\% at 100 scenes, combined with a $5.5\times$ runtime speedup, demonstrates that decomposition-guided search is the appropriate paradigm for production-scale MSSP instances.

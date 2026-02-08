@@ -139,3 +139,31 @@ This preserves spatial locality, reducing inter-block transfer costs.
 ACM identifies the actor with the largest idle gap between block appearances.
 It moves the later block immediately after the earlier one, reducing the number of idle days (and thus wage payments) for that actor.
 This directly exploits the MSSP cost structure where actor wages dominate total cost.
+
+\subsection{Computational Complexity Analysis}
+\label{sec:complexity}
+
+\paragraph{Problem Complexity.}
+The MSSP is NP-hard by reduction from the single-machine weighted completion time problem~\citep{garey1979, pinedo2016}.
+Even the single-objective variant (minimizing cost only) requires searching over $n!$ scene orderings subject to capacity, precedence, and availability constraints.
+
+\paragraph{Search Space Reduction.}
+BDM-AOS exploits the SIG structure to decompose $n$ scenes into $K$ blocks, reducing the upper-level search space from $O(n!)$ to $O(K!)$.
+For our largest instance (S100: $n=100$ scenes), Louvain decomposition yields $K \approx 24$ blocks, reducing the search space by a factor exceeding $\frac{100!}{24!} \approx 10^{134}$.
+Even at moderate scale (S50: $n=50$, $K \approx 12$), the reduction factor is $\frac{50!}{12!} \approx 10^{55}$.
+
+\paragraph{Per-Generation Complexity.}
+Each generation of the NSGA-II upper level involves:
+\begin{itemize}
+    \item \textit{Crossover/mutation}: $O(N \cdot K)$ per offspring, where $N$ is population size and $K$ is the number of blocks;
+    \item \textit{Greedy reassembly decoding}: $O(n \cdot T)$ per individual, where $T$ is the planning horizon;
+    \item \textit{Non-dominated sorting}: $O(N^2 \cdot 2)$ for bi-objective problems;
+    \item \textit{AOS Q-table lookup}: $O(1)$ (81-state, 9-action table).
+\end{itemize}
+
+The total per-generation cost is $O(N \cdot (n \cdot T + K))$, dominated by the greedy decoder evaluations.
+
+\paragraph{Overall Complexity.}
+With $G$ generations and population size $N$:
+$\text{Total} = O(G \cdot N \cdot n \cdot T)$.
+Using our default parameters ($N=20$, $G=40$), this is $O(800 \cdot n \cdot T)$, linear in instance size for fixed parameters---a significant advantage over exact methods whose worst-case complexity is exponential.

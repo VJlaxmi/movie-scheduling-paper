@@ -1,0 +1,134 @@
+\appendix
+
+\section{Instance Generation Parameters}
+\label{app:instances}
+
+Table~\ref{tab:instance_params} documents the full parameterization of our synthetic instance generator.
+All instances are generated with master seed 42 for reproducibility.
+
+\begin{table}[h]
+\centering
+\caption{Synthetic instance generation parameters.}
+\label{tab:instance_params}
+\small
+\begin{tabular}{lcccc}
+\toprule
+\textbf{Config} & \textbf{Scenes} & \textbf{Actors} & \textbf{Locations} & \textbf{Horizon (days)} \\
+\midrule
+S10  & 10  & 5   & 3  & 15  \\
+S15  & 15  & 8   & 4  & 25  \\
+S20  & 20  & 10  & 5  & 35  \\
+S25  & 25  & 12  & 6  & 45  \\
+S30  & 30  & 15  & 7  & 55  \\
+S50  & 50  & 20  & 10 & 90  \\
+S75  & 75  & 35  & 12 & 120 \\
+S100 & 100 & 43  & 15 & 150 \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+For each instance:
+\begin{itemize}
+    \item Scene durations are drawn uniformly from $\{1, 2, 3, 4\}$ hours;
+    \item Each scene requires 1--3 actors, assigned randomly with uniform probability;
+    \item Each scene is compatible with 1--2 locations;
+    \item Actor daily wages are drawn from $U(500, 2000)$;
+    \item Transfer costs between locations are drawn from $U(100, 500)$;
+    \item Actor availability is $\sim$80\% of the planning horizon;
+    \item 10\% of scene pairs have precedence constraints;
+    \item Daily capacity is 8 hours.
+\end{itemize}
+
+\section{Hyperparameter Sensitivity Analysis}
+\label{app:sensitivity}
+
+We performed a sensitivity analysis of key BDM-AOS hyperparameters on the S25 instance.
+For each parameter, we varied one parameter while fixing all others at their default values.
+
+\paragraph{Population Size.}
+Varying $N \in \{10, 20, 30, 50\}$: cost improves modestly from $N=10$ to $N=20$ (3.2\% average reduction) but shows diminishing returns beyond $N=20$, while runtime scales linearly with $N$.
+
+\paragraph{Generations.}
+Varying $G \in \{20, 40, 60, 100\}$: convergence is achieved by generation 30--35 for most instances, confirming that $G=40$ provides sufficient search budget.
+
+\paragraph{Q-Learning Parameters.}
+The AOS learning rate $\alpha \in \{0.05, 0.1, 0.2\}$ and discount factor $\gamma \in \{0.8, 0.9, 0.95\}$ show stable performance across tested ranges, indicating robustness of the Q-learning adaptation.
+
+\section{Q-Learning State-Action Table}
+\label{app:qtable}
+
+The AOS state space discretizes four continuous features:
+\begin{itemize}
+    \item \textbf{Generation progress}: early ($g/G < 0.33$), mid ($0.33 \leq g/G < 0.67$), late ($g/G \geq 0.67$);
+    \item \textbf{Population diversity}: low ($d < 0.3$), medium ($0.3 \leq d < 0.7$), high ($d \geq 0.7$);
+    \item \textbf{Improvement rate}: stagnant ($r < 0.01$), slow ($0.01 \leq r < 0.1$), fast ($r \geq 0.1$);
+    \item \textbf{Quality gap}: good ($q < 0.1$), moderate ($0.1 \leq q < 0.5$), poor ($q \geq 0.5$).
+\end{itemize}
+
+This yields $3^4 = 81$ states.
+The action space comprises $3 \times 3 = 9$ operator pairs: $\{$PMX, OX, LAX$\} \times \{$swap, block-swap, ACM$\}$.
+The Q-table is initialized to zeros and updated via standard Q-learning (Eq.~\ref{eq:qlearning}).
+
+\section{Extended Results Tables}
+\label{app:extended_results}
+
+Full per-seed results for all 8 algorithms across all 8 instances are provided in the supplementary repository at \url{https://github.com/VJlaxmi/movie-scheduling-paper/tree/main/experiments/runs}.
+Each JSON file contains the complete run record including final cost, makespan, runtime, Pareto front, convergence history, and AOS operator frequency log.
+
+\section{Friedman Test Details}
+\label{app:friedman}
+
+We apply the Friedman test across all algorithms on each instance, using mean cost over 30 seeds as the performance measure.
+When the Friedman test rejects the null hypothesis of equal ranks ($p < 0.05$), we apply Holm's step-down procedure for pairwise comparisons with BDM-AOS as the control algorithm.
+
+\section{Decomposition Analysis}
+\label{app:decomposition}
+
+The SIG-based Louvain decomposition produces the following block structures:
+
+\begin{table}[h]
+\centering
+\caption{Block decomposition statistics across instances.}
+\label{tab:decomposition}
+\small
+\begin{tabular}{lccc}
+\toprule
+\textbf{Config} & \textbf{Num. Blocks} & \textbf{Avg. Block Size} & \textbf{Search Space Reduction} \\
+\midrule
+S10  & 3   & 3.3 & $10!/3! = 604{,}800\times$   \\
+S15  & 4   & 3.8 & $15!/4! = 5.4 \times 10^{10}\times$  \\
+S20  & 6   & 3.3 & $20!/6! = 3.4 \times 10^{15}\times$  \\
+S25  & 6   & 4.2 & $25!/6! = 2.2 \times 10^{22}\times$  \\
+S30  & 8   & 3.8 & $30!/8! = 8.1 \times 10^{28}\times$  \\
+S50  & 12  & 4.2 & $50!/12! = 1.3 \times 10^{55}\times$ \\
+S75  & 16  & 4.7 & $75!/16! = 5.4 \times 10^{96}\times$ \\
+S100 & 24  & 4.2 & $100!/24! = 4.1 \times 10^{134}\times$ \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\section{Runtime Environment}
+\label{app:runtime}
+
+\begin{table}[h]
+\centering
+\caption{Software environment for all experiments.}
+\label{tab:environment}
+\small
+\begin{tabular}{ll}
+\toprule
+\textbf{Component} & \textbf{Version} \\
+\midrule
+Python           & 3.14.2 \\
+NumPy            & 2.3.0 \\
+SciPy            & 1.16.0 \\
+pandas           & 2.3.0 \\
+NetworkX         & 3.5 \\
+python-louvain   & 0.16 \\
+Pyomo            & 6.9.2 \\
+CBC Solver       & 2.10 \\
+Matplotlib       & 3.10.3 \\
+OS               & Windows \\
+\bottomrule
+\end{tabular}
+\end{table}

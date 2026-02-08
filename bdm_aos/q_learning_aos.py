@@ -58,6 +58,9 @@ class QLearningAOS:
         self.action_rewards = defaultdict(list)
         self.history: List[Dict] = []
 
+        # Per-generation operator frequency tracking
+        self.generation_operator_log: List[Dict] = []  # [{gen, cx_op, mut_op, reward}]
+
     def _discretize_state(self, generation: int, max_generation: int,
                           diversity: float, improvement_rate: float,
                           quality_gap: float) -> str:
@@ -152,6 +155,14 @@ class QLearningAOS:
             "reward": reward,
             "epsilon": self.epsilon
         })
+        # Log per-generation operator selection
+        gen = state_info[0] if state_info else len(self.generation_operator_log)
+        self.generation_operator_log.append({
+            "gen": gen,
+            "cx_op": cx_op,
+            "mut_op": mut_op,
+            "reward": float(reward),
+        })
 
     def get_stats(self) -> Dict:
         """Return statistics about operator usage and performance."""
@@ -179,5 +190,8 @@ class QLearningAOS:
         stats["total_actions"] = sum(self.action_counts.values())
         stats["final_epsilon"] = self.epsilon
         stats["num_states_visited"] = len(self.q_table)
+
+        # Per-generation operator frequency log
+        stats["operator_frequency_log"] = self.generation_operator_log
 
         return stats

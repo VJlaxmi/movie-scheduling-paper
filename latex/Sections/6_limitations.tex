@@ -1,17 +1,26 @@
 \section{Limitations}
 \label{sec:limitations}
 
-\paragraph{Instance Scale.}
-Our experiments use synthetic instances up to 25 scenes. While this covers the range studied in prior MSSP literature~\citep{liu2019, long2020}, real-world feature films may involve 100+ scenes. The decomposition approach should scale to such sizes (producing more blocks while keeping each block small), but empirical validation on larger instances remains future work.
-
 \paragraph{Synthetic Data.}
-All instances are synthetically generated following established parameter ranges. While our generator incorporates precedence, time windows, and geographic cost structures, it may not capture all idiosyncrasies of real production schedules (e.g., weather dependencies, union regulations, equipment sharing). Validation on real film scripts, such as the 70-scene instance used by \citet{tekin2023}, would strengthen external validity.
+All instances are synthetically generated following established parameter ranges from the MSSP literature~\citep{bomsdorf2008, liu2019, tekin2023}.
+While our generator incorporates precedence constraints, time windows, actor availability, and geographic cost structures, it may not capture all idiosyncrasies of real production schedules (e.g., weather dependencies, union regulations, equipment sharing, creative preferences).
+Validation on real film scripts, such as the 70-scene instance used by \citet{tekin2023}, would strengthen external validity.
 
 \paragraph{Block Granularity.}
-When Louvain decomposition produces too few blocks ($K \leq 4$), the block-permutation search space is too small for evolutionary search to provide value. On S15 ($K=3$, $3!=6$ permutations) and S20 ($K=4$, $4!=24$ permutations), BDM underperforms scene-level metaheuristics. Hierarchical decomposition or sub-block splitting could address this.
+When Louvain decomposition produces too few blocks ($K \leq 4$), the block-permutation search space is too small for evolutionary search to provide value over flat scene-level optimization.
+On small instances (S10--S15), the BDM variants may underperform scene-level metaheuristics that have a richer search space.
+Hierarchical decomposition or adaptive block splitting could address this.
+The ablation results (BDM-Flat vs. BDM-AOS) directly quantify this trade-off.
 
 \paragraph{Pareto Front Collapse.}
-The greedy decoder assigns identical makespan regardless of scene ordering, causing the Pareto front to degenerate to a single point on all tested instances. The bi-objective formulation does not produce genuine cost-makespan trade-offs under the current decoder. A decoder that allows variable daily utilization would be needed to realize multi-objective benefits.
+The greedy decoder tends to assign similar makespan values regardless of scene ordering, limiting the diversity of the Pareto front.
+The bi-objective formulation produces limited cost-makespan trade-offs under the current decoder.
+A decoder that allows variable daily utilization or explicitly trades off cost against makespan would be needed to realize full multi-objective benefits.
 
-\paragraph{Number of Seeds.}
-We use 3 independent seeds per algorithm. While sufficient for initial comparisons, 30 seeds would provide stronger statistical power, as recommended by~\citet{derrac2011}. Computational budget constraints limited our seed count.
+\paragraph{Fixed Hyperparameters.}
+Algorithm hyperparameters (population size, generations, crossover/mutation rates) are fixed across all instance sizes.
+While our sensitivity analysis (Appendix~\ref{app:sensitivity}) suggests robustness within tested ranges, instance-adaptive parameter tuning could further improve performance, particularly for S75 and S100 where the search landscape changes qualitatively.
+
+\paragraph{Scalability of MILP Baseline.}
+The MILP solver is limited to instances up to S15 within practical time limits (60 seconds), preventing direct comparison with optimal solutions on larger instances.
+This is a fundamental limitation of exact methods for NP-hard problems~\citep{garey1979} and motivates the matheuristic approach, but it means we lack ground-truth optimality gaps for S20 and above.

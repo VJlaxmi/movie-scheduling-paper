@@ -37,9 +37,10 @@ class ExperimentRunner:
             algorithms: Algorithms to run (default: all)
         """
         if configs is None:
-            configs = ["S10", "S15", "S20", "S25", "S30", "S50"]
+            configs = ["S10", "S15", "S20", "S25", "S30", "S50", "S75", "S100"]
         if algorithms is None:
-            algorithms = ["BDM_AOS", "BDM_NoAOS", "GA", "PSO", "MILP"]
+            algorithms = ["BDM_AOS", "BDM_NoAOS", "BDM_NoSIG", "BDM_NoSpecOps",
+                          "BDM_Flat", "GA", "PSO", "MILP"]
 
         # Generate instances
         gen = ScaledDataGenerator(seed=42)
@@ -74,6 +75,34 @@ class ExperimentRunner:
                 seeds = [1] if algo_name == "MILP" else list(range(1, self.num_seeds + 1))
 
                 for seed in seeds:
+                    # Skip if already completed
+                    run_dir = os.path.join(self.output_dir, "runs",
+                                           config, algo_name)
+                    run_file = os.path.join(run_dir, f"seed_{seed}.json")
+                    if os.path.exists(run_file):
+                        # Load cached result
+                        with open(run_file, 'r') as rf:
+                            cached = json.load(rf)
+                        row = {
+                            "config": config, "algorithm": algo_name,
+                            "seed": seed,
+                            "cost": cached.get("best_cost", float('inf')),
+                            "makespan": cached.get("best_makespan", float('inf')),
+                            "runtime": cached.get("runtime", 0),
+                            "status": "success",
+                            "num_scenes": inst.num_scenes,
+                            "num_actors": inst.num_actors,
+                        }
+                        if "num_blocks" in cached:
+                            row["num_blocks"] = cached["num_blocks"]
+                        if "aos_stats" in cached and cached["aos_stats"]:
+                            row["best_operator"] = cached["aos_stats"].get("best_operator", "")
+                        if "pareto_front" in cached:
+                            row["pareto_size"] = len(cached["pareto_front"])
+                        all_results.append(row)
+                        print(f"  {algo_name} seed={seed} on {config}: CACHED (cost={row['cost']:.1f})")
+                        continue
+
                     print(f"\n  {algo_name} seed={seed} on {config}...")
 
                     try:
@@ -146,6 +175,9 @@ class ExperimentRunner:
                 crossover_rate=0.9,
                 mutation_rate=0.3,
                 use_aos=True,
+                use_sig=True,
+                use_spec_ops=True,
+                flat_mode=False,
                 seed=seed,
                 milp_time_limit=10,
             )
@@ -158,6 +190,54 @@ class ExperimentRunner:
                 crossover_rate=0.9,
                 mutation_rate=0.3,
                 use_aos=False,
+                use_sig=True,
+                use_spec_ops=True,
+                flat_mode=False,
+                seed=seed,
+                milp_time_limit=10,
+            )
+            return algo.run(inst)
+
+        elif algo_name == "BDM_NoSIG":
+            algo = BDM_AOS(
+                population_size=20,
+                generations=40,
+                crossover_rate=0.9,
+                mutation_rate=0.3,
+                use_aos=True,
+                use_sig=False,
+                use_spec_ops=True,
+                flat_mode=False,
+                seed=seed,
+                milp_time_limit=10,
+            )
+            return algo.run(inst)
+
+        elif algo_name == "BDM_NoSpecOps":
+            algo = BDM_AOS(
+                population_size=20,
+                generations=40,
+                crossover_rate=0.9,
+                mutation_rate=0.3,
+                use_aos=True,
+                use_sig=True,
+                use_spec_ops=False,
+                flat_mode=False,
+                seed=seed,
+                milp_time_limit=10,
+            )
+            return algo.run(inst)
+
+        elif algo_name == "BDM_Flat":
+            algo = BDM_AOS(
+                population_size=20,
+                generations=40,
+                crossover_rate=0.9,
+                mutation_rate=0.3,
+                use_aos=True,
+                use_sig=True,
+                use_spec_ops=True,
+                flat_mode=True,
                 seed=seed,
                 milp_time_limit=10,
             )

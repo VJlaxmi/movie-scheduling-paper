@@ -2,11 +2,11 @@
 The Movie Scene Scheduling Problem (MSSP) seeks to sequence film scenes across shooting days to minimize total production cost, subject to actor availability, location capacity, precedence, and time-window constraints.
 Existing approaches either solve the MSSP exactly via mixed-integer linear programming (MILP), which becomes intractable beyond 15--20 scenes, or apply standalone metaheuristics that ignore exploitable problem structure.
 We propose \textbf{BDM-AOS}, a Bi-level Decomposition Matheuristic with Adaptive Operator Selection.
-Our method introduces three novel contributions:
+Our method introduces three contributions:
 (i)~a \emph{Scene Interaction Graph} (SIG) that captures actor-sharing, location-sharing, and transfer-cost coupling between scenes, enabling Louvain community detection to partition scenes into tightly coupled \emph{shooting blocks};
-(ii)~a bi-level matheuristic where NSGA-II evolves block permutations at the upper level while a global greedy decoder schedules scenes in block-guided order, simultaneously optimizing cost and makespan;
+(ii)~a bi-level framework where NSGA-II evolves block permutations at the upper level while a global greedy decoder schedules scenes in block-guided order, simultaneously considering cost and makespan;
 (iii)~a Q-learning adaptive operator selection mechanism that dynamically chooses among standard and two novel problem-specific operators---Location-Aware Crossover (LAX) and Actor-Continuity Mutation (ACM).
-Computational experiments on synthetic instances with 10--25 scenes show that BDM-AOS achieves cost within 1.6\% of standalone GA on small instances (S10) and within 0.4\% of PSO on larger instances (S25), while providing a Pareto front of cost-makespan trade-off solutions unavailable from single-objective methods.
-The decomposition approach demonstrates zero variance across seeds on multiple instance sizes, indicating robust structure-guided search.
+Experiments on synthetic instances with 10--25 scenes show that BDM-AOS achieves cost within 1.6\% of standalone GA on small instances (S10) and within 0.4\% of PSO on the largest instance tested (S25), with zero variance across seeds.
+The decomposition approach yields diminishing search spaces for few-block instances, but becomes competitive as block count grows---pointing toward advantages at larger scales.
 All code and data are publicly available.
 \end{abstract}

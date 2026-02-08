@@ -17,30 +17,31 @@ The key insight is that decomposition becomes increasingly valuable as $n$ grows
 
 \subsection{Role of Adaptive Operator Selection}
 
-The Q-learning AOS adapts operator selection to search dynamics.
-On S25, BDM-AOS achieves a cost of 36{,}947 (zero variance across seeds) versus BDM-NoAOS's mean of 37{,}479 (std: 923), demonstrating that AOS consistently finds the optimal block ordering while random operator selection exhibits variability.
-The most frequently selected operators across instances are: LAX+ACM (location-aware crossover with actor-continuity mutation) in early phases, and PMX+swap in convergence phases.
+The Q-learning AOS adapts operator selection to the search state.
+On S25, BDM-AOS achieves a cost of 36{,}947 with zero variance across seeds, versus BDM-NoAOS's mean of 37{,}479 (std: 923).
+This 1.4\% improvement shows that AOS consistently steers toward the best block ordering, while random operator selection misses it in some runs.
+On S10--S20, both variants find identical solutions because the block-permutation spaces ($\leq 24$) are small enough to be fully explored regardless of operator choice.
+The most frequently selected operators on S25 are PMX+block\_swap and OX+block\_swap.
 
-\subsection{Multi-Objective Value}
+\subsection{On the Multi-Objective Formulation}
 
-Unlike all prior MSSP work, which optimizes a single cost objective, BDM-AOS provides a Pareto front revealing cost-makespan trade-offs.
-Notably, all algorithms achieve the \emph{same makespan} on each instance (Table~\ref{tab:results}), indicating that the greedy decoder naturally finds schedules with similar temporal spread regardless of scene ordering.
-The Pareto front within BDM-AOS thus reveals alternative schedules that trade modest cost increases for reduced filming duration, which is valuable for production planning.
+BDM-AOS uses NSGA-II to jointly optimize cost and makespan.
+However, our experiments reveal that the greedy decoder assigns a fixed makespan for each instance (e.g., 7~days for S10, 16~days for S25), regardless of scene ordering.
+As a result, the Pareto front collapses to a single point---cost varies with permutation but makespan does not.
+This means cost and makespan are \emph{not} conflicting objectives under the current decoder.
+To obtain genuine trade-offs, the decoder would need to allow variable daily capacity or idle-day insertion, which we leave for future work.
 
 \subsection{Comparison with Literature}
 
-Our findings are consistent with the MSSP literature:
+Our results are consistent with the MSSP literature:
 \begin{itemize}
-    \item \citet{tekin2023} reported PSO achieving $<1\%$ gaps on small instances, consistent with our observation that PSO and GA converge to similar costs on S10.
-    \item \citet{liu2019} reported TSBM gaps of 0.18\% and PSOBM gaps of 7.92\%, suggesting metaheuristic quality varies with algorithmic design---our BDM-AOS gap of 7.4\% on S25 is comparable.
-    \item The zero variance of BDM-AOS on S10 and S25 indicates the decomposition-guided ordering is robust, unlike GA/PSO whose performance varies across seeds.
+    \item \citet{tekin2023} reported PSO achieving $<1\%$ gaps from optimal on small instances. Our GA and PSO baselines similarly converge to near-identical costs on S10.
+    \item \citet{liu2019} reported TSBM gaps of 0.18\% and PSOBM gaps of 7.92\% from MILP optimal. BDM-AOS's gap of 7.4\% from GA on S25 falls in a similar range, though direct comparison is limited by different instance sets.
+    \item The zero variance of BDM-AOS across seeds contrasts with GA/PSO variance (e.g., PSO std of 1{,}218 on S25), suggesting the decomposition-guided ordering is deterministic once the best block permutation is found.
 \end{itemize}
 
-\subsection{Limitations and Future Work}
+\subsection{Key Takeaway}
 
-The primary limitation is the block granularity: when Louvain produces too few blocks ($K \leq 4$), the block-permutation search space is too small for evolutionary optimization to provide value over exhaustive enumeration.
-Future work should explore:
-(i)~hierarchical decomposition with sub-block splitting to increase $K$;
-(ii)~hybrid approaches that combine block-level ordering with intra-block scene-level perturbation;
-(iii)~evaluation on larger instances ($n > 50$) where decomposition benefits are expected to dominate;
-(iv)~integration with real production data from film studios.
+The decomposition approach works best when Louvain produces enough blocks ($K \geq 6$) to give NSGA-II a meaningful search space.
+For instances where $K \leq 4$, direct scene-level metaheuristics remain superior.
+Future work should target instances with 50+ scenes, where $K$ naturally grows and the $n!/K!$ search-space reduction becomes decisive.

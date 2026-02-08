@@ -18,7 +18,7 @@ We propose \textbf{BDM-AOS} (Bi-level Decomposition Matheuristic with Adaptive O
 \begin{enumerate}
     \item \textbf{Scene Interaction Graph (SIG):} A novel graph-theoretic representation where nodes are scenes and edge weights quantify coupling through actor sharing (Jaccard similarity), location sharing, and transfer cost proximity. Louvain community detection~\citep{blondel2008} on the SIG partitions scenes into shooting blocks, dramatically reducing the combinatorial search space.
     
-    \item \textbf{Bi-level Matheuristic:} The upper level uses NSGA-II~\citep{deb2002} to evolve permutations of shooting blocks, simultaneously optimizing total cost and makespan. The lower level solves each block as a small MILP sub-problem or via a constraint-aware greedy heuristic, providing optimal or near-optimal intra-block scheduling. This is the first matheuristic approach for the MSSP.
+    \item \textbf{Bi-level Decomposition with Greedy Reassembly:} The upper level uses NSGA-II~\citep{deb2002} to evolve permutations of shooting blocks, simultaneously optimizing total cost and makespan. The lower level applies a global greedy decoder that packs scenes into days in block-guided order, sharing days across blocks. This is the first decomposition-based approach for the MSSP.
     
     \item \textbf{Q-Learning Adaptive Operator Selection (AOS):} A reinforcement learning mechanism that dynamically selects among a pool of six crossover-mutation combinations, including two novel problem-specific operators:
     \begin{itemize}
@@ -28,7 +28,7 @@ We propose \textbf{BDM-AOS} (Bi-level Decomposition Matheuristic with Adaptive O
     
     \item \textbf{Multi-objective formulation:} We present the first bi-objective MSSP formulation optimizing cost and makespan simultaneously, providing a Pareto front of trade-off solutions.
     
-    \item \textbf{Rigorous experimental evaluation:} Comprehensive experiments on 5 instance sizes (10--30 scenes) with 5 independent seeds per algorithm, including ablation studies and Wilcoxon rank-sum statistical testing.
+    \item \textbf{Experimental evaluation:} Experiments on 4 instance sizes (10--25 scenes) with 3 independent seeds per algorithm, ablation studies, and Wilcoxon rank-sum statistical testing.
 \end{enumerate}
 
 The remainder of this paper is organized as follows.

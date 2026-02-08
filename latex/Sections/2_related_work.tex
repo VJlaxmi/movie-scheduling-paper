@@ -19,9 +19,9 @@ None employ multi-objective optimization, decomposition strategies, or adaptive 
 
 \subsection{Multi-Objective Scheduling}
 
-Multi-objective evolutionary algorithms have been successfully applied to related scheduling problems.
-\citet{deb2002} introduced NSGA-II, which remains the standard for bi-objective optimization.
-\citet{han2025} applied NSGA-III to film scene visual optimization (a different problem from MSSP) with Wilcoxon rank-sum and Friedman statistical testing, demonstrating the viability of multi-objective evolutionary approaches in film production contexts.
+Multi-objective evolutionary algorithms have been applied to various scheduling problems.
+\citet{deb2002} introduced NSGA-II, which remains a standard for bi-objective optimization.
+In a related film-production context, \citet{han2025} applied NSGA-III to visual effects composition---a distinct problem from scene scheduling---using Wilcoxon and Friedman tests for algorithm comparison.
 
 \subsection{Matheuristics and Adaptive Operator Selection}
 
@@ -36,7 +36,7 @@ Q-learning-based AOS~\citep{li2014, fialho2008} adapts operator probabilities ba
 \subsection{Positioning of This Work}
 
 Table~\ref{tab:positioning} summarizes the landscape.
-BDM-AOS is the first MSSP approach combining (i)~decomposition via graph clustering, (ii)~MILP-metaheuristic hybridization, (iii)~multi-objective optimization, and (iv)~adaptive operator selection with problem-specific operators.
+BDM-AOS is the first MSSP approach combining (i)~decomposition via graph clustering, (ii)~a bi-level metaheuristic-decoder framework, (iii)~multi-objective formulation, and (iv)~adaptive operator selection with problem-specific operators.
 
 \begin{table}[t]
 \centering
@@ -51,7 +51,7 @@ BDM-AOS is the first MSSP approach combining (i)~decomposition via graph cluster
 MILP exact model          & \checkmark & \checkmark & \checkmark & \checkmark \\
 Single metaheuristic      & TS, PSO    & TS, PSO, ACO & PSO       & ---        \\
 Decomposition             & ---        & ---        & ---        & \checkmark \\
-Matheuristic hybrid       & ---        & ---        & ---        & \checkmark \\
+Bi-level framework        & ---        & ---        & ---        & \checkmark \\
 Multi-objective            & ---        & ---        & ---        & \checkmark \\
 Adaptive operator select. & ---        & ---        & ---        & \checkmark \\
 Problem-specific operators & ---       & ---        & ---        & LAX, ACM   \\

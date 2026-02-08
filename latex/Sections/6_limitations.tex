@@ -10,5 +10,8 @@ All instances are synthetically generated following established parameter ranges
 \paragraph{Block Granularity.}
 When Louvain decomposition produces too few blocks ($K \leq 4$), the block-permutation search space is too small for evolutionary search to provide value. On S15 ($K=3$, $3!=6$ permutations) and S20 ($K=4$, $4!=24$ permutations), BDM underperforms scene-level metaheuristics. Hierarchical decomposition or sub-block splitting could address this.
 
+\paragraph{Pareto Front Collapse.}
+The greedy decoder assigns identical makespan regardless of scene ordering, causing the Pareto front to degenerate to a single point on all tested instances. The bi-objective formulation does not produce genuine cost-makespan trade-offs under the current decoder. A decoder that allows variable daily utilization would be needed to realize multi-objective benefits.
+
 \paragraph{Number of Seeds.}
 We use 3 independent seeds per algorithm. While sufficient for initial comparisons, 30 seeds would provide stronger statistical power, as recommended by~\citet{derrac2011}. Computational budget constraints limited our seed count.

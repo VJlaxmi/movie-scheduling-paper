@@ -146,14 +146,15 @@ The linking constraints (\ref{c8}--\ref{c9}) and geographic logistics constraint
 \subsection{Scene Interaction Graph (SIG)}
 \label{sec:sig}
 
-We define an undirected weighted graph $G = (\mathcal{S}, E, w)$ where each scene is a node and edge weights capture structural coupling:
+We define an undirected weighted graph $G = (\mathcal{S}, E, w)$ where each scene is a node and edge weights capture structural coupling.
+The SIG leverages the hierarchical location model (Section~\ref{sec:formulation}) by computing transfer costs $\bar{c}(s_i, s_j)$ using the composite three-tier formula of Eq.~\eqref{eq:transfer_cost}:
 \begin{equation}
 w(s_i, s_j) = \alpha \cdot J_A(s_i, s_j) + \beta \cdot J_L(s_i, s_j) + \gamma \cdot \frac{1}{1 + \bar{c}(s_i, s_j)}
 \label{eq:sig}
 \end{equation}
-where $J_A(s_i, s_j) = \frac{|A(s_i) \cap A(s_j)|}{|A(s_i) \cup A(s_j)|}$ is the Jaccard similarity of actor sets, $J_L$ is the Jaccard similarity of location sets, $\bar{c}(s_i, s_j)$ is the average transfer cost between compatible locations, and $\alpha + \beta + \gamma = 1$ are weighting parameters (default: $\alpha{=}0.5$, $\beta{=}0.3$, $\gamma{=}0.2$).
+where $J_A(s_i, s_j) = \frac{|A(s_i) \cap A(s_j)|}{|A(s_i) \cup A(s_j)|}$ is the Jaccard similarity of actor sets, $J_L$ is the Jaccard similarity of location sets, $\bar{c}(s_i, s_j)$ is the average composite transfer cost between compatible locations (reflecting city/town/location distances), and $\alpha + \beta + \gamma = 1$ are weighting parameters (default: $\alpha{=}0.5$, $\beta{=}0.3$, $\gamma{=}0.2$).
 
-Scenes sharing many actors and locations receive high edge weights, encoding the intuition that such scenes benefit from consecutive scheduling.
+Scenes sharing many actors and co-located within the same town receive high edge weights, encoding the intuition that such scenes benefit from consecutive scheduling and naturally satisfy the town-uniqueness constraint~\ref{c11}.
 
 \paragraph{Louvain Decomposition.}
 We apply Louvain community detection~\citep{blondel2008} to $G$, which maximizes modularity to identify densely connected scene clusters.
@@ -172,14 +173,16 @@ Non-dominated sorting partitions the population into Pareto fronts, and crowding
 
 \paragraph{Lower Level: Global Greedy Reassembly.}
 For each block permutation $\pi$, we construct a scene-level ordering by concatenating the scenes of each block in sequence: first all scenes from $B_{\pi_1}$ (sorted by constraint tightness), then $B_{\pi_2}$, and so on.
-A global greedy decoder then processes this ordering, packing scenes into shooting days using the same mechanism as standalone baselines:
+A global greedy decoder then processes this ordering, packing scenes into shooting days while enforcing all 13 constraint families from Section~\ref{sec:formulation}:
 \begin{itemize}
-    \item Scenes are assigned to the earliest feasible day respecting capacity ($\leq 8$h/day), actor availability, and time windows;
-    \item Location is chosen to minimize transfer cost from the previous scene;
+    \item \textbf{Assignment \& Capacity} (\ref{c1}--\ref{c5}): each scene assigned to exactly one day, respecting capacity ($\leq W_{\max}$ hours/day), precedence, and time windows;
+    \item \textbf{Availability} (\ref{c6}--\ref{c7}): actor and location availability calendars are checked before placement;
+    \item \textbf{Geographic logistics} (\ref{c10}--\ref{c12}): location is chosen to respect town-uniqueness (at most one active town per day) and town-continuity (no town switches on consecutive days), with transfer cost minimized using Eq.~\eqref{eq:transfer_cost};
+    \item \textbf{Labor limits} (\ref{c13}): actor consecutive working-day limits are verified before scheduling;
     \item Days are shared across blocks naturally, avoiding the cost overhead of isolated per-block scheduling.
 \end{itemize}
 
-This \emph{global reassembly} approach ensures that the decomposition guides the ordering while the greedy decoder handles day packing, achieving cost-competitive solutions while preserving the search-space reduction of block-level evolution.
+This \emph{global reassembly} approach ensures that the decomposition guides the ordering while the greedy decoder handles day packing with full constraint enforcement, achieving cost-competitive solutions while preserving the search-space reduction of block-level evolution.
 
 \paragraph{Solution Evaluation.}
 Each chromosome $\pi$ is evaluated by the global greedy reassembly: scenes are ordered according to the block permutation, then greedily assigned to days.
@@ -190,7 +193,7 @@ The result is a bi-objective vector $(f_1, f_2)$ fed to NSGA-II.
 \caption{BDM-AOS: Bi-Level Decomposition Matheuristic}
 \label{alg:bdm_aos}
 \begin{algorithmic}[1]
-\REQUIRE MSSP instance $(\mathcal{S}, \mathcal{A}, \mathcal{L}, \mathcal{D})$, parameters $(N, G, p_c, p_m)$
+\REQUIRE MSSP instance $(\mathcal{S}, \mathcal{A}, \mathcal{C}, \mathcal{I}, \mathcal{L}, \mathcal{D}, \phi, \psi)$, parameters $(N, G, p_c, p_m)$
 \ENSURE Pareto front of schedules
 \STATE Build Scene Interaction Graph $G_{\text{SIG}}$ via Eq.~(\ref{eq:sig})
 \STATE $\{B_1, \ldots, B_K\} \leftarrow$ Louvain$(G_{\text{SIG}})$
@@ -254,7 +257,7 @@ This directly exploits the MSSP cost structure where actor wages dominate total 
 
 \paragraph{Problem Complexity.}
 The MSSP is NP-hard by reduction from the single-machine weighted completion time problem~\citep{garey1979, pinedo2016}.
-Even the single-objective variant (minimizing cost only) requires searching over $n!$ scene orderings subject to capacity, precedence, and availability constraints.
+Even the single-objective variant (minimizing cost only) requires searching over $n!$ scene orderings subject to the 13 constraint families---including the geographic logistics constraints (\ref{c10}--\ref{c12}) and actor labor limits (\ref{c13})---that create dense variable coupling with $O(nmT + nkT + qT)$ binary variables.
 
 \paragraph{Search Space Reduction.}
 BDM-AOS exploits the SIG structure to decompose $n$ scenes into $K$ blocks, reducing the upper-level search space from $O(n!)$ to $O(K!)$.

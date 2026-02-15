@@ -25,15 +25,17 @@ The scalability analysis shows that BDM-AOS's advantages grow with instance size
 Several promising directions emerge:
 
 \begin{itemize}
-    \item \textbf{Real-world validation:} Apply BDM-AOS to real film scripts (e.g., the 70-scene, 43-actor instance from~\citet{tekin2023}) to validate practical applicability.
-    
-    \item \textbf{Adaptive decomposition:} Re-cluster the SIG periodically during search to exploit evolving population structure, or use hierarchical decomposition to address the block-granularity limitation.
-    
-    \item \textbf{Alternative decoders:} Design decoders that produce genuine cost-makespan trade-offs by allowing variable daily utilization, enabling the bi-objective formulation to realize its full potential.
-    
-    \item \textbf{Deep RL for AOS:} Replace tabular Q-learning with deep Q-networks for continuous state representation, enabling finer-grained operator selection that generalizes across instance sizes.
-    
-    \item \textbf{Many-objective extension:} Extend to three or more objectives (cost, makespan, actor fatigue, location utilization) using NSGA-III~\citep{deb2014}.
-    
-    \item \textbf{Uncertainty handling:} Incorporate stochastic elements (weather delays, actor illness) via robust or stochastic programming at the sub-problem level.
+    \item \textbf{Real-world validation:} Apply BDM-AOS to real film scripts (e.g., the 70-scene, 43-actor instance from~\citet{tekin2023}) to validate the hierarchical location model and geographic logistics constraints under real production conditions.
+
+    \item \textbf{Adaptive decomposition:} Re-cluster the SIG periodically during search to exploit evolving population structure, or use hierarchical decomposition (city-level blocks containing town-level sub-blocks) to address the block-granularity limitation.
+
+    \item \textbf{Alternative decoders:} Design decoders that produce genuine cost-makespan trade-offs by allowing variable daily utilization, explicitly trading off town-switching travel days against shooting compactness, and enabling the bi-objective formulation to realize its full potential.
+
+    \item \textbf{Deep RL for AOS:} Replace tabular Q-learning with deep Q-networks for continuous state representation, enabling finer-grained operator selection that generalizes across instance sizes and constraint configurations.
+
+    \item \textbf{Many-objective extension:} Extend to three or more objectives (cost, makespan, actor fatigue, location utilization, town-switching frequency) using NSGA-III~\citep{deb2014}, leveraging the linking variables $v_{a,s,d}$ and $z_{l,s,d}$ for fine-grained objective computation.
+
+    \item \textbf{Uncertainty handling:} Incorporate stochastic elements (weather delays, actor illness, location unavailability) via robust or stochastic programming at the sub-problem level, using the hierarchical structure to model correlated disruptions (e.g., weather affecting all locations within a town).
+
+    \item \textbf{Extended hierarchy:} Model additional tiers (country-level for international productions) and incorporate travel-day constraints between cities, where town continuity (\ref{c12}) generalizes to mandatory rest days between city changes.
 \end{itemize}

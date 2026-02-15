@@ -3,7 +3,7 @@
 
 \subsection{Instance Generation}
 
-We generate synthetic MSSP instances using the parameterized generator described in Section~\ref{sec:problem}.
+We generate synthetic MSSP instances using the parameterized generator described in Appendix~\ref{app:instances}, with the formulation and constraint families from Section~\ref{sec:formulation}.
 Table~\ref{tab:instances} summarizes the eight instance configurations spanning 10 to 100 scenes.
 All instances use a fixed seed~42 for reproducibility.
 
@@ -38,14 +38,14 @@ All 13 constraint families (C1--C13) from Section~\ref{sec:formulation} are acti
 We compare eight algorithm configurations:
 
 \begin{itemize}
-    \item \textbf{BDM-AOS}: Full proposed algorithm (SIG decomposition, NSGA-II on block permutations with Q-learning AOS, greedy reassembly decoder; population~20, generations~40, $p_c{=}0.9$, $p_m{=}0.3$).
+    \item \textbf{BDM-AOS}: Full proposed algorithm (SIG decomposition, NSGA-II on block permutations with Q-learning AOS, greedy reassembly decoder enforcing all 13 constraint families; population~20, generations~40, $p_c{=}0.9$, $p_m{=}0.3$).
     \item \textbf{BDM-NoAOS}: Ablation with uniform random operator selection (no Q-learning).
     \item \textbf{BDM-NoSIG}: Ablation replacing Louvain community detection with random equal-sized blocks.
     \item \textbf{BDM-NoSpecOps}: Ablation disabling domain-specific operators (LAX crossover and ACM mutation), retaining only PMX, OX, swap, and block\_swap.
     \item \textbf{BDM-Flat}: Ablation using one scene per block (scene-level permutations through the BDM framework).
-    \item \textbf{Standalone GA}: Standard genetic algorithm on scene permutations (population~50, generations~100, OX crossover, swap mutation, $p_c{=}0.85$, $p_m{=}0.15$)~\citep{goncalves2011}.
-    \item \textbf{Standalone PSO}: Discrete PSO following \citet{kennedy1995} (swarm~30, iterations~100, $w{=}0.7$, $c_1{=}1.5$, $c_2{=}1.5$).
-    \item \textbf{Full MILP}: Exact solver (CBC) with 60s time limit; computed only for $n \leq 15$ due to intractability~\citep{hart2011}.
+    \item \textbf{Standalone GA}: Standard genetic algorithm on scene permutations with greedy decoder enforcing all 13 constraint families (population~50, generations~100, OX crossover, swap mutation, $p_c{=}0.85$, $p_m{=}0.15$)~\citep{goncalves2011}.
+    \item \textbf{Standalone PSO}: Discrete PSO following \citet{kennedy1995} with the same constraint-enforcing greedy decoder (swarm~30, iterations~100, $w{=}0.7$, $c_1{=}1.5$, $c_2{=}1.5$).
+    \item \textbf{Full MILP}: Exact solver (CBC) with 60s time limit, implementing all 13 constraint families including town activation variables and geographic logistics constraints (\ref{c10}--\ref{c12}); computed only for $n \leq 15$ due to intractability~\citep{hart2011}.
 \end{itemize}
 
 Each metaheuristic configuration is run with \textbf{30 independent random seeds}.

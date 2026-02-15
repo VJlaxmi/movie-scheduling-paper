@@ -13,9 +13,13 @@ We survey five bodies of literature that inform the design of BDM-AOS:
 The MSSP was first formalized as a combinatorial optimization problem with integer linear programming~\citep{bomsdorf2008, degraeve2007}.
 \citet{zhen2014} formulated a cost-minimization ILP and solved it with CPLEX.
 \citet{liu2019} extended this model with 24 constraints covering actor availability, location compatibility, and scene-day assignments, solving instances up to 15 scenes optimally before CPLEX exceeded 7{,}200-second time limits.
-\citet{tekin2023} developed the most comprehensive MILP formulation to date, with 31 constraints including precedence relations, time windows, and actor blocking periods.
+\citet{tekin2023} developed a comprehensive MILP formulation with 31 constraints including precedence relations, time windows, and actor blocking periods.
 Using CPLEX on 160 benchmark instances, Tekin showed that exact solutions become impractical beyond 25 scenes with blocking-time constraints.
 This NP-hard complexity profile~\citep{garey1979} motivates metaheuristic and matheuristic approaches.
+
+Notably, all existing MILP formulations for the MSSP employ \emph{flat} location models---locations are treated as independent entities without geographic structure.
+Real film productions operate across a multi-tier hierarchy (production cities, towns/districts, and specific venues), with transfer costs and crew logistics that vary by tier.
+Our formulation (Section~\ref{sec:formulation}) addresses this gap with a three-tier city--town--location hierarchy, linking variables that couple scenes with actor participation and location usage, town-level logistics constraints, criticality-weighted utilization, and actor labor regulations---producing 13 structured constraint families that capture operational realities absent from prior models.
 
 \subsection{Metaheuristic Approaches}
 
@@ -63,7 +67,7 @@ Statistical testing protocols for comparing stochastic algorithms~\citep{garcia2
 \subsection{Positioning of This Work}
 
 Table~\ref{tab:positioning} summarizes the landscape.
-BDM-AOS is the first MSSP approach combining (i)~decomposition via graph clustering, (ii)~a bi-level metaheuristic-decoder framework, (iii)~multi-objective formulation, and (iv)~adaptive operator selection with problem-specific operators.
+BDM-AOS is the first MSSP approach combining (i)~a structurally rich MILP formulation with hierarchical location modeling and geographic logistics constraints, (ii)~decomposition via graph clustering, (iii)~a bi-level metaheuristic-decoder framework enforcing all 13 constraint families, (iv)~multi-objective optimization, and (v)~adaptive operator selection with problem-specific operators.
 
 \begin{table}[t]
 \centering

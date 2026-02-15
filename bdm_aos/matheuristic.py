@@ -176,11 +176,40 @@ class BDM_AOS:
             block_scenes = sorted(self.blocks[block_idx], key=scene_flexibility)
             scene_order.extend(block_scenes)
 
-        # Global greedy decoder (same logic as baselines.evaluate_permutation)
+        # Global greedy decoder enforcing all 13 constraint families
         schedule = {}
         day_hours = {}        # day -> hours used
         actor_days = {}       # actor -> set of days
+        day_town = {}         # day -> active town (C11)
         total_cost = 0.0
+
+        def _get_town(loc):
+            return inst.location_town.get(loc)
+
+        def _town_continuity_ok(d, town):
+            """C12: no town switch on consecutive days."""
+            if town is None:
+                return True
+            if d - 1 in day_town and day_town[d - 1] is not None and day_town[d - 1] != town:
+                return False
+            if d + 1 in day_town and day_town[d + 1] is not None and day_town[d + 1] != town:
+                return False
+            return True
+
+        def _consec_ok(actor, d):
+            """C13: actor consecutive working day limit."""
+            max_c = inst.actor_max_consecutive.get(actor, 99)
+            worked = actor_days.get(actor, set())
+            consec = 1
+            cd = d - 1
+            while cd in worked:
+                consec += 1
+                cd -= 1
+            cd = d + 1
+            while cd in worked:
+                consec += 1
+                cd += 1
+            return consec <= max_c
 
         for scene in scene_order:
             dur = inst.scene_duration.get(scene, 2.0)
@@ -204,7 +233,11 @@ class BDM_AOS:
                 if tw and not (tw[0] <= d <= tw[1]):
                     continue
 
-                # Choose best location
+                # C13: actor consecutive day limits
+                if not all(_consec_ok(a, d) for a in actors):
+                    continue
+
+                # Choose best location respecting town constraints
                 chosen_loc = None
                 min_tc = float('inf')
                 last_loc = None
@@ -214,6 +247,13 @@ class BDM_AOS:
 
                 for loc in locs:
                     if d not in inst.location_availability.get(loc, inst.days):
+                        continue
+                    town = _get_town(loc)
+                    # C11: town uniqueness per day
+                    if d in day_town and day_town[d] is not None and day_town[d] != town:
+                        continue
+                    # C12: town continuity
+                    if not _town_continuity_ok(d, town):
                         continue
                     tc = 0
                     if last_loc:
@@ -233,6 +273,12 @@ class BDM_AOS:
                 }
                 day_hours[d] = used_h + dur
 
+                # Track town activation (C11)
+                if chosen_loc:
+                    town = _get_town(chosen_loc)
+                    if town is not None:
+                        day_town[d] = town
+
                 for a in actors:
                     if a not in actor_days:
                         actor_days[a] = set()
@@ -247,6 +293,16 @@ class BDM_AOS:
                     dl = inst.scene_deadline[scene]
                     if d > dl:
                         total_cost += inst.deadline_penalty.get(scene, 100) * (d - dl)
+
+                # Criticality-weighted utilization cost
+                if chosen_loc:
+                    kl = inst.location_criticality.get(chosen_loc, 1.0)
+                    if kl > 0:
+                        total_cost += 1.0 / kl
+                for a in actors:
+                    ka = inst.actor_criticality.get(a, 1.0)
+                    if ka > 0:
+                        total_cost += 1.0 / ka
 
                 placed = True
                 break

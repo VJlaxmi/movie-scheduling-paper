@@ -9,27 +9,29 @@ All instances use a fixed seed~42 for reproducibility.
 
 \begin{table}[h]
 \centering
-\caption{Instance configurations. All instances use fixed seed~42.}
+\caption{Instance configurations. All instances use fixed seed~42. Columns: $|\mathcal{S}|$ scenes, $|\mathcal{A}|$ actors, $|\mathcal{C}|/|\mathcal{I}|/|\mathcal{L}|$ cities/towns/locations, $T$ days.}
 \label{tab:instances}
 \small
-\begin{tabular}{lccccc}
+\begin{tabular}{lcccccc}
 \toprule
-\textbf{Config} & \textbf{Scenes} & \textbf{Actors} & \textbf{Locations} & \textbf{Days} & \textbf{Constraints} \\
+\textbf{Config} & $|\mathcal{S}|$ & $|\mathcal{A}|$ & $|\mathcal{C}|/|\mathcal{I}|/|\mathcal{L}|$ & $T$ & \textbf{Active Constraints} \\
 \midrule
-S10  & 10  & 5   & 3   & 15  & Prec, TW, Avail \\
-S15  & 15  & 8   & 4   & 25  & Prec, TW, Avail \\
-S20  & 20  & 10  & 5   & 35  & Prec, TW, Avail \\
-S25  & 25  & 12  & 6   & 45  & Prec, TW, Avail \\
-S30  & 30  & 15  & 7   & 55  & Prec, TW, Avail \\
-S50  & 50  & 20  & 10  & 90  & Prec, TW, Avail \\
-S75  & 75  & 35  & 12  & 120 & Prec, TW, Avail \\
-S100 & 100 & 43  & 15  & 150 & Prec, TW, Avail \\
+S10  & 10  & 5   & 1/2/3   & 15  & C1--C13 \\
+S15  & 15  & 8   & 1/2/4   & 25  & C1--C13 \\
+S20  & 20  & 10  & 2/3/5   & 35  & C1--C13 \\
+S25  & 25  & 12  & 2/4/6   & 45  & C1--C13 \\
+S30  & 30  & 15  & 2/4/7   & 55  & C1--C13 \\
+S50  & 50  & 20  & 3/6/10  & 90  & C1--C13 \\
+S75  & 75  & 35  & 4/8/12  & 120 & C1--C13 \\
+S100 & 100 & 43  & 5/10/15 & 150 & C1--C13 \\
 \bottomrule
 \end{tabular}
 \end{table}
 
-Instance parameters follow established ranges from the scheduling literature~\citep{bomsdorf2008,nordstrom2022}: actor wages \$80--\$1{,}000/day, transfer costs \$0--\$10{,}000 (distance-based), scene durations 1--4 hours, 30\% precedence probability, and 80\% actor availability.
-Each instance includes time windows, deadlines with penalties, and a geographic location hierarchy.
+Instance parameters follow established ranges from the scheduling literature~\citep{bomsdorf2008,nordstrom2022}: actor wages \$80--\$1{,}000/day, scene durations 1--4 hours, 20\% precedence probability, 80\% actor availability, and 85\% location availability.
+Transfer costs follow the three-tier hierarchy of Eq.~\eqref{eq:transfer_cost}: intra-town \$100--\$500, inter-town \$500--\$2{,}000, inter-city \$2{,}000--\$8{,}000.
+Each instance includes time windows (40\% of scenes), soft deadlines with penalties (30\% of scenes), actor criticality weights ($\kappa^A \sim U(1,10)$), location criticality weights ($\kappa^L \sim U(1,10)$), and maximum consecutive working days ($\bar{h}_a \in \{3,4,5,6\}$).
+All 13 constraint families (C1--C13) from Section~\ref{sec:formulation} are active across all instances.
 
 \subsection{Algorithms Compared}
 

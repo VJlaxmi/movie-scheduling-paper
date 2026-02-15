@@ -75,18 +75,21 @@ BDM-AOS is the first MSSP approach combining (i)~decomposition via graph cluster
 \textbf{Feature} & \textbf{Liu} & \textbf{Long} & \textbf{Tekin} & \textbf{BDM-AOS} \\
  & \textbf{(2019)} & \textbf{(2020)} & \textbf{(2023)} & \textbf{(Ours)} \\
 \midrule
-MILP exact model          & \checkmark & \checkmark & \checkmark & \checkmark \\
-Single metaheuristic      & TS, PSO    & TS, PSO, ACO & PSO       & ---        \\
-Decomposition             & ---        & ---        & ---        & SIG+Louvain \\
-Bi-level framework        & ---        & ---        & ---        & \checkmark \\
-Multi-objective            & ---        & ---        & ---        & NSGA-II \\
-Adaptive operator select. & ---        & ---        & ---        & Q-learning \\
-Problem-specific operators & ---       & ---        & ---        & LAX, ACM   \\
-Instances tested           & 15        & 40         & 160        & 8 configs  \\
-Max scenes                 & 40        & 40         & 70         & 100 \\
-Independent seeds          & 1         & 1          & 1          & 30 \\
-Statistical testing        & ---       & ---        & ---        & Friedman+Holm \\
-Quality indicators         & Gap\%     & Gap\%      & Gap\%      & HV, IGD \\
+MILP constraint families   & 24         & ---        & 31         & \textbf{13 (structured)} \\
+Location hierarchy          & flat       & flat       & flat       & \textbf{3-tier (C/T/L)} \\
+Town logistics constraints  & ---        & ---        & ---        & \textbf{C10--C12} \\
+Actor labor constraints     & ---        & ---        & blocking   & \textbf{C13} \\
+Criticality weighting       & ---        & ---        & ---        & \textbf{\checkmark} \\
+Single metaheuristic        & TS, PSO    & TS, PSO, ACO & PSO       & ---        \\
+Decomposition               & ---        & ---        & ---        & SIG+Louvain \\
+Bi-level framework          & ---        & ---        & ---        & \checkmark \\
+Multi-objective              & ---        & ---        & ---        & NSGA-II \\
+Adaptive operator select.   & ---        & ---        & ---        & Q-learning \\
+Problem-specific operators   & ---       & ---        & ---        & LAX, ACM   \\
+Max scenes                   & 40        & 40         & 70         & 100 \\
+Independent seeds            & 1         & 1          & 1          & 30 \\
+Statistical testing          & ---       & ---        & ---        & Friedman+Holm \\
+Quality indicators           & Gap\%     & Gap\%      & Gap\%      & HV, IGD \\
 \bottomrule
 \end{tabular}
 \end{table}

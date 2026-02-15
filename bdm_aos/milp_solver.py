@@ -197,6 +197,55 @@ class MILPSubProblemSolver:
                 if pre in block_set and post in block_set:
                     model.prec.add(model.day_of[pre] + 1 <= model.day_of[post])
 
+            # C10-C11: Town activation and uniqueness constraints
+            relevant_towns = set()
+            for loc in locations:
+                town = inst.location_town.get(loc)
+                if town is not None:
+                    relevant_towns.add(town)
+            relevant_towns = sorted(relevant_towns)
+
+            if relevant_towns:
+                town_day_pairs = [(t, d) for t in relevant_towns
+                                  for d in available_days]
+                model.TD = PyoSet(initialize=town_day_pairs)
+                model.u = Var(model.TD, within=Binary)
+
+                # C10: location-town linking (z_{l,s,d} <= u_{phi(l),d})
+                model.loc_town_link = ConstraintList()
+                for s in scenes:
+                    for loc in inst.scene_locations.get(s, []):
+                        town = inst.location_town.get(loc)
+                        if town is not None and town in relevant_towns:
+                            for d in [d for (ss, d) in valid_sd if ss == s]:
+                                if (loc, d) in inst.location_availability:
+                                    pass  # availability already filtered
+                                model.loc_town_link.add(
+                                    model.x[s, d] <= model.u[town, d])
+
+                # C11: at most one active town per day
+                model.town_unique = ConstraintList()
+                for d in available_days:
+                    towns_on_d = [t for t in relevant_towns
+                                  if (t, d) in model.TD]
+                    if len(towns_on_d) > 1:
+                        model.town_unique.add(
+                            sum(model.u[t, d] for t in towns_on_d) <= 1)
+
+                # C12: town continuity across consecutive days
+                model.town_cont = ConstraintList()
+                sorted_days = sorted(available_days)
+                for idx in range(1, len(sorted_days)):
+                    d = sorted_days[idx]
+                    d_prev = sorted_days[idx - 1]
+                    if d == d_prev + 1:  # consecutive days
+                        for ti in relevant_towns:
+                            for tj in relevant_towns:
+                                if ti != tj:
+                                    if (ti, d) in model.TD and (tj, d_prev) in model.TD:
+                                        model.town_cont.add(
+                                            model.u[ti, d] + model.u[tj, d_prev] <= 1)
+
             # Objective
             wage_expr = 0
             for a in actors:
@@ -222,8 +271,23 @@ class MILPSubProblemSolver:
                         if d > dl:
                             deadline_expr += pen * (d - dl) * model.x[s, d]
 
-            model.obj = Objective(expr=wage_expr + transfer_expr + deadline_expr,
-                                  sense=minimize)
+            # Criticality-weighted utilization (objective term iv)
+            crit_expr = 0
+            for s in scenes:
+                for loc in inst.scene_locations.get(s, []):
+                    kl = inst.location_criticality.get(loc, 1.0)
+                    if kl > 0:
+                        for d in [d for (ss, d) in valid_sd if ss == s]:
+                            crit_expr += model.x[s, d] / kl
+                for a in inst.scene_actors.get(s, []):
+                    ka = inst.actor_criticality.get(a, 1.0)
+                    if ka > 0:
+                        for d in [d for (ss, d) in valid_sd if ss == s]:
+                            crit_expr += model.x[s, d] / ka
+
+            model.obj = Objective(
+                expr=wage_expr + transfer_expr + deadline_expr + crit_expr,
+                sense=minimize)
 
             solver = SolverFactory(self.solver_name)
             try:
@@ -285,6 +349,7 @@ class MILPSubProblemSolver:
         schedule = {}
         day_hours = {}  # day -> total hours used
         actor_days = {}  # actor -> set of days they work
+        day_town = {}   # day -> active town (C11: at most one town per day)
 
         # Sort scenes by tightness: fewest valid days first
         def scene_flexibility(s):
@@ -294,6 +359,38 @@ class MILPSubProblemSolver:
             return len(available_days)
 
         sorted_scenes = sorted(block_scenes, key=scene_flexibility)
+
+        def _get_town_for_loc(loc):
+            """Get the town for a location from hierarchy."""
+            return inst.location_town.get(loc)
+
+        def _check_town_continuity(d, town):
+            """C12: Check town continuity with previous/next day."""
+            if town is None:
+                return True
+            if d - 1 in day_town and day_town[d - 1] is not None:
+                if day_town[d - 1] != town:
+                    return False
+            if d + 1 in day_town and day_town[d + 1] is not None:
+                if day_town[d + 1] != town:
+                    return False
+            return True
+
+        def _check_actor_consecutive(actor, d):
+            """C13: Check actor consecutive working day limit."""
+            max_consec = inst.actor_max_consecutive.get(actor, 99)
+            days_worked = actor_days.get(actor, set())
+            # Count consecutive run ending at day d
+            consec = 1
+            check_d = d - 1
+            while check_d in days_worked:
+                consec += 1
+                check_d -= 1
+            check_d = d + 1
+            while check_d in days_worked:
+                consec += 1
+                check_d += 1
+            return consec <= max_consec
 
         for s in sorted_scenes:
             dur = inst.scene_duration.get(s, 2.0)
@@ -311,7 +408,7 @@ class MILPSubProblemSolver:
                 if used_h + dur > 8.0:
                     continue
 
-                # Check actor availability
+                # Check actor availability (C6)
                 all_avail = all(
                     d in inst.actor_availability.get(a, inst.days)
                     for a in scene_actors
@@ -319,36 +416,67 @@ class MILPSubProblemSolver:
                 if not all_avail:
                     continue
 
-                # Check time window
+                # Check time window (C4)
                 tw = inst.time_windows.get(s)
                 if tw and not (tw[0] <= d <= tw[1]):
                     continue
 
-                # Choose best location on this day
+                # C13: Check actor consecutive working day limits
+                consec_ok = all(
+                    _check_actor_consecutive(a, d) for a in scene_actors
+                )
+                if not consec_ok:
+                    continue
+
+                # Choose best location on this day (respecting town constraints)
                 chosen_loc = None
                 min_tc = float('inf')
                 for loc in locs:
-                    if d in inst.location_availability.get(loc, inst.days):
-                        tc = 0
-                        if last_location:
-                            tc = inst.transfer_cost.get(
-                                (last_location, loc), 0)
-                        if tc < min_tc:
-                            min_tc = tc
-                            chosen_loc = loc
+                    if d not in inst.location_availability.get(loc, inst.days):
+                        continue
+                    town = _get_town_for_loc(loc)
+                    # C11: town uniqueness - check if another town is already active
+                    if d in day_town and day_town[d] is not None and day_town[d] != town:
+                        continue
+                    # C12: town continuity
+                    if not _check_town_continuity(d, town):
+                        continue
+                    tc = 0
+                    if last_location:
+                        tc = inst.transfer_cost.get(
+                            (last_location, loc), 0)
+                    if tc < min_tc:
+                        min_tc = tc
+                        chosen_loc = loc
 
                 if chosen_loc is None:
-                    # Try any location (relax availability)
-                    chosen_loc = locs[0] if locs else None
-                    min_tc = 0
+                    # Relax town constraints if no location found
+                    for loc in locs:
+                        if d in inst.location_availability.get(loc, inst.days):
+                            chosen_loc = loc
+                            min_tc = 0
+                            break
+                    if chosen_loc is None:
+                        chosen_loc = locs[0] if locs else None
+                        min_tc = 0
 
-                # Score = wage cost on new days + transfer cost
+                # Score = wage cost + transfer cost + criticality
                 wage_cost = 0
                 for a in scene_actors:
                     if d not in actor_days.get(a, set()):
                         wage_cost += inst.actor_wage.get(a, 0)
 
                 score = wage_cost + min_tc
+
+                # Criticality-weighted utilization
+                if chosen_loc:
+                    kl = inst.location_criticality.get(chosen_loc, 1.0)
+                    if kl > 0:
+                        score += 1.0 / kl
+                for a in scene_actors:
+                    ka = inst.actor_criticality.get(a, 1.0)
+                    if ka > 0:
+                        score += 1.0 / ka
 
                 # Deadline penalty
                 if s in inst.scene_deadline:
@@ -371,6 +499,11 @@ class MILPSubProblemSolver:
                 day_hours[best_day] = day_hours.get(best_day, 0) + dur
                 for a in scene_actors:
                     actor_days.setdefault(a, set()).add(best_day)
+                # Track active town for C11/C12
+                if best_loc:
+                    town = _get_town_for_loc(best_loc)
+                    if town is not None:
+                        day_town[best_day] = town
                 placed = True
 
             if not placed:

@@ -25,13 +25,44 @@ from .milp_solver import MILPSubProblemSolver
 def evaluate_permutation(perm: List[int], inst: MSSPInstance) -> Tuple[float, float, Dict]:
     """
     Evaluate a scene permutation using greedy constructive decoding.
+    Enforces all 13 constraint families including town uniqueness (C11),
+    town continuity (C12), and actor consecutive day limits (C13).
     Returns (cost, makespan, schedule).
     """
     schedule = {}
     day_hours = {}        # day -> hours used
     actor_days = {}       # actor -> set of days
+    day_town = {}         # day -> active town (C11)
     current_day = 1
     total_cost = 0.0
+
+    def _get_town(loc):
+        return inst.location_town.get(loc) if hasattr(inst, 'location_town') else None
+
+    def _town_continuity_ok(d, town):
+        """C12: no town switch on consecutive days."""
+        if town is None:
+            return True
+        if d - 1 in day_town and day_town[d - 1] is not None and day_town[d - 1] != town:
+            return False
+        if d + 1 in day_town and day_town[d + 1] is not None and day_town[d + 1] != town:
+            return False
+        return True
+
+    def _consec_ok(actor, d):
+        """C13: actor consecutive working day limit."""
+        max_c = inst.actor_max_consecutive.get(actor, 99) if hasattr(inst, 'actor_max_consecutive') else 99
+        worked = actor_days.get(actor, set())
+        consec = 1
+        cd = d - 1
+        while cd in worked:
+            consec += 1
+            cd -= 1
+        cd = d + 1
+        while cd in worked:
+            consec += 1
+            cd += 1
+        return consec <= max_c
 
     for scene in perm:
         dur = inst.scene_duration.get(scene, 2.0)
@@ -44,7 +75,7 @@ def evaluate_permutation(perm: List[int], inst: MSSPInstance) -> Tuple[float, fl
             if used_h + dur > 8.0:
                 continue
 
-            # Check actor availability
+            # C6: Check actor availability
             all_avail = all(
                 d in inst.actor_availability.get(a, inst.days)
                 for a in actors
@@ -52,12 +83,16 @@ def evaluate_permutation(perm: List[int], inst: MSSPInstance) -> Tuple[float, fl
             if not all_avail:
                 continue
 
-            # Check time window
+            # C4: Check time window
             tw = inst.time_windows.get(scene)
             if tw and not (tw[0] <= d <= tw[1]):
                 continue
 
-            # Choose best location (cheapest transfer from last)
+            # C13: Check actor consecutive working day limits
+            if not all(_consec_ok(a, d) for a in actors):
+                continue
+
+            # Choose best location respecting town constraints
             chosen_loc = None
             min_tc = float('inf')
             last_loc = None
@@ -67,6 +102,13 @@ def evaluate_permutation(perm: List[int], inst: MSSPInstance) -> Tuple[float, fl
 
             for loc in locs:
                 if d not in inst.location_availability.get(loc, inst.days):
+                    continue
+                town = _get_town(loc)
+                # C11: town uniqueness per day
+                if d in day_town and day_town[d] is not None and day_town[d] != town:
+                    continue
+                # C12: town continuity
+                if not _town_continuity_ok(d, town):
                     continue
                 tc = 0
                 if last_loc:
@@ -86,6 +128,12 @@ def evaluate_permutation(perm: List[int], inst: MSSPInstance) -> Tuple[float, fl
             }
             day_hours[d] = used_h + dur
 
+            # Track town activation (C11)
+            if chosen_loc:
+                town = _get_town(chosen_loc)
+                if town is not None:
+                    day_town[d] = town
+
             # Costs
             for a in actors:
                 if a not in actor_days:
@@ -102,6 +150,16 @@ def evaluate_permutation(perm: List[int], inst: MSSPInstance) -> Tuple[float, fl
                 dl = inst.scene_deadline[scene]
                 if d > dl:
                     total_cost += inst.deadline_penalty.get(scene, 100) * (d - dl)
+
+            # Criticality-weighted utilization
+            if chosen_loc:
+                kl = getattr(inst, 'location_criticality', {}).get(chosen_loc, 1.0)
+                if kl > 0:
+                    total_cost += 1.0 / kl
+            for a in actors:
+                ka = getattr(inst, 'actor_criticality', {}).get(a, 1.0)
+                if ka > 0:
+                    total_cost += 1.0 / ka
 
             placed = True
             break

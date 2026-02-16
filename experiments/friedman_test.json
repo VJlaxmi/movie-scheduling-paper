@@ -1,14 +1,14 @@
 {
-  "statistic": 30.2679,
-  "p_value": 3.5e-05,
+  "statistic": 32.4643,
+  "p_value": 1.3e-05,
   "significant": true,
   "avg_ranks": {
-    "BDM_Flat": 5.25,
-    "BDM_NoAOS": 3.25,
-    "BDM_AOS": 3.12,
-    "BDM_NoSpecOps": 4.38,
-    "PSO": 1.75,
-    "GA": 3.25,
-    "BDM_NoSIG": 7.0
+    "BDM_NoAOS": 3.62,
+    "BDM_NoSIG": 7.0,
+    "BDM_Flat": 4.12,
+    "GA": 2.5,
+    "BDM_AOS": 4.12,
+    "BDM_NoSpecOps": 5.12,
+    "PSO": 1.5
   }
 }

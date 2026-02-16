@@ -7,7 +7,10 @@ Louvain community detection partitions scenes into shooting blocks.
 """
 
 import networkx as nx
-import community as community_louvain
+try:
+    import community as community_louvain
+except ImportError:
+    community_louvain = None
 import numpy as np
 from typing import Dict, List, Tuple
 from .data_generator import MSSPInstance
@@ -96,6 +99,21 @@ class SceneInteractionGraph:
         """
         G = self.build_graph(inst)
 
+        # Fallback if python-louvain not available: use greedy modularity
+        if community_louvain is None:
+            from networkx.algorithms.community import greedy_modularity_communities
+            comms = list(greedy_modularity_communities(G, weight='weight'))
+            blocks = [sorted(list(c)) for c in comms]
+            # Ensure minimum blocks
+            while len(blocks) < min_blocks and any(len(b) > 2 for b in blocks):
+                largest_idx = max(range(len(blocks)), key=lambda i: len(blocks[i]))
+                block = blocks.pop(largest_idx)
+                mid = len(block) // 2
+                blocks.append(sorted(block[:mid]))
+                blocks.append(sorted(block[mid:]))
+            blocks.sort(key=lambda b: min(b))
+            return blocks, G
+
         # Try increasing resolution until we get enough blocks
         best_blocks = None
         for res_mult in [1.0, 1.5, 2.0, 3.0, 5.0, 8.0]:
@@ -123,14 +141,18 @@ class SceneInteractionGraph:
             else:
                 # Split large block into sub-blocks of max_block_size
                 subG = G.subgraph(block)
-                # Try Louvain on subgraph
-                sub_part = community_louvain.best_partition(
-                    subG, weight='weight', resolution=2.0, random_state=42
-                )
-                sub_comm: Dict[int, List[int]] = {}
-                for s, c in sub_part.items():
-                    sub_comm.setdefault(c, []).append(s)
-                sub_blocks = [sorted(sc) for sc in sub_comm.values()]
+                if community_louvain is not None:
+                    sub_part = community_louvain.best_partition(
+                        subG, weight='weight', resolution=2.0, random_state=42
+                    )
+                    sub_comm: Dict[int, List[int]] = {}
+                    for s, c in sub_part.items():
+                        sub_comm.setdefault(c, []).append(s)
+                    sub_blocks = [sorted(sc) for sc in sub_comm.values()]
+                else:
+                    from networkx.algorithms.community import greedy_modularity_communities
+                    comms = list(greedy_modularity_communities(subG, weight='weight'))
+                    sub_blocks = [sorted(list(c)) for c in comms]
                 if len(sub_blocks) > 1:
                     final_blocks.extend(sub_blocks)
                 else:

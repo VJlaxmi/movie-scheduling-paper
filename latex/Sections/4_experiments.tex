@@ -66,14 +66,14 @@ The number of blocks $K$ grows sub-linearly with instance size, yielding exponen
 \toprule
 \textbf{Config} & \textbf{Scenes} & \textbf{Blocks ($K$)} & \textbf{Block Perms.\ ($K!$)} & \textbf{Space Reduction ($n!/K!$)} \\
 \midrule
-S10  & 10  & 4   & $24$                  & $1.5 \times 10^{5}$ \\
+S10  & 10  & 3   & $6$                   & $6.0 \times 10^{5}$ \\
 S15  & 15  & 3   & $6$                   & $2.2 \times 10^{11}$ \\
-S20  & 20  & 6   & $720$                 & $3.4 \times 10^{15}$ \\
-S25  & 25  & 8   & $40{,}320$            & $3.9 \times 10^{20}$ \\
-S30  & 30  & 8   & $40{,}320$            & $6.6 \times 10^{27}$ \\
-S50  & 50  & 14  & $8.7 \times 10^{10}$  & $3.5 \times 10^{53}$ \\
-S75  & 75  & 17  & $3.6 \times 10^{14}$  & $3.0 \times 10^{95}$ \\
-S100 & 100 & 26  & $4.0 \times 10^{26}$  & $2.3 \times 10^{131}$ \\
+S20  & 20  & 4   & $24$                  & $1.0 \times 10^{17}$ \\
+S25  & 25  & 5   & $120$                 & $1.3 \times 10^{23}$ \\
+S30  & 30  & 6   & $720$                 & $3.7 \times 10^{29}$ \\
+S50  & 50  & 10  & $3.6 \times 10^{6}$   & $8.4 \times 10^{57}$ \\
+S75  & 75  & 15  & $1.3 \times 10^{12}$  & $8.3 \times 10^{97}$ \\
+S100 & 100 & 20  & $2.4 \times 10^{18}$  & $3.8 \times 10^{139}$ \\
 \bottomrule
 \end{tabular}
 \end{table}
@@ -94,70 +94,67 @@ Results are averaged over 30 independent seeds except where noted.
 \textbf{Config} & \textbf{Algorithm} & \textbf{Mean (\$k)} & \textbf{Std (\$k)} & \textbf{Min (\$k)} & \textbf{Time (s)} \\
 \midrule
 \multirow{4}{*}{S10}
-  & GA           & 12.5  & 0.1   & 12.5  & 0.34 \\
-  & PSO          & \textbf{12.5}  & 0.0   & \textbf{12.5}  & 0.19 \\
-  & BDM-AOS      & \textbf{12.5}  & 0.0   & \textbf{12.5}  & 0.20 \\
-  & MILP         & 13.7  & ---   & 13.7  & 1.02 \\
+  & GA           & 9.4   & 0.1   & 9.2   & 0.36 \\
+  & PSO          & \textbf{9.3}   & 0.1   & \textbf{9.2}   & 0.20 \\
+  & BDM-AOS      & 10.6  & 0.0   & 10.6  & 0.17 \\
+  & MILP         & 11.3  & ---   & 11.3  & 0.00 \\
 \midrule
 \multirow{4}{*}{S15}
-  & GA           & 15.7  & 0.5   & 14.9  & 0.45 \\
-  & PSO          & \textbf{15.3}  & 0.2   & \textbf{15.0}  & 0.26 \\
-  & BDM-AOS      & 15.5  & 0.0   & 15.5  & 0.22 \\
-  & MILP         & \textit{12.5}  & ---   & \textit{12.5}  & 0.04 \\
+  & GA           & 13.2  & 0.7   & 12.6  & 0.60 \\
+  & PSO          & \textbf{12.9}  & 0.3   & \textbf{12.4}  & 0.34 \\
+  & BDM-AOS      & 18.5  & 0.0   & 18.5  & 0.19 \\
+  & MILP         & \textit{21.2}  & ---   & \textit{21.2}  & 0.00 \\
 \midrule
 \multirow{3}{*}{S20}
-  & GA           & 33.4  & 2.3   & 31.5  & 0.81 \\
-  & PSO          & \textbf{32.5}  & 0.9   & \textbf{31.2}  & 0.47 \\
-  & BDM-AOS      & 40.3  & 0.2   & 40.2  & 0.28 \\
+  & GA           & \textbf{25.5}  & 0.9   & \textbf{23.7}  & 0.89 \\
+  & PSO          & 25.7  & 1.0   & 23.5  & 0.50 \\
+  & BDM-AOS      & 31.9  & 0.0   & 31.9  & 0.23 \\
 \midrule
 \multirow{3}{*}{S25}
-  & GA           & 36.1  & 3.9   & 30.3  & 0.93 \\
-  & PSO          & \textbf{33.3}  & 1.5   & \textbf{31.6}  & 0.55 \\
-  & BDM-AOS      & 36.9  & 6.4   & 32.7  & 0.33 \\
+  & GA           & 52.1  & 6.3   & 43.1  & 1.10 \\
+  & PSO          & \textbf{49.8}  & 6.0   & \textbf{41.6}  & 0.62 \\
+  & BDM-AOS      & 76.1  & 0.0   & 76.1  & 0.27 \\
 \midrule
 \multirow{3}{*}{S30}
-  & GA           & \textbf{37.4}  & 1.6   & \textbf{35.8}  & 1.53 \\
-  & PSO          & 40.1  & 3.8   & 35.7  & 0.94 \\
-  & BDM-AOS      & 49.8  & 3.6   & 46.3  & 0.41 \\
+  & GA           & 81.5  & 15.2  & 54.5  & 1.49 \\
+  & PSO          & \textbf{71.6}  & 7.9   & \textbf{58.8}  & 0.85 \\
+  & BDM-AOS      & 88.1  & 3.0   & 85.3  & 0.34 \\
 \midrule
 \multirow{3}{*}{S50}
-  & GA           & 113.0 & 10.0  & 95.1  & 3.51 \\
-  & PSO          & \textbf{112.8} & 8.7   & \textbf{100.9} & 2.11 \\
-  & BDM-AOS      & 119.1 & 4.5   & 109.8 & 0.71 \\
+  & GA           & 165.9 & 23.4  & 125.2 & 2.41 \\
+  & PSO          & \textbf{157.4} & 14.8  & \textbf{133.7} & 1.35 \\
+  & BDM-AOS      & 206.6 & 12.1  & 190.8 & 0.58 \\
 \midrule
 \multirow{3}{*}{S75}
-  & GA           & 169.6 & 22.9  & 129.4 & 6.16 \\
-  & PSO          & 166.0 & 15.6  & 137.6 & 3.56 \\
-  & BDM-AOS      & \textbf{134.5} & 13.4  & \textbf{111.6} & 1.10 \\
+  & GA           & 294.2 & 28.0  & 230.8 & 4.63 \\
+  & PSO          & \textbf{279.0} & 25.3  & \textbf{219.5} & 2.64 \\
+  & BDM-AOS      & 287.0 & 19.6  & 255.8 & 0.91 \\
 \midrule
 \multirow{3}{*}{S100}
-  & GA           & 272.1 & 22.0  & 232.6 & 8.78 \\
-  & PSO          & 265.5 & 14.7  & 240.5 & 5.23 \\
-  & BDM-AOS      & \textbf{232.8} & 18.5  & \textbf{205.5} & 1.61 \\
+  & GA           & 493.9 & 29.4  & 442.1 & 7.40 \\
+  & PSO          & 482.2 & 29.5  & 429.4 & 4.22 \\
+  & BDM-AOS      & \textbf{468.8} & 17.6  & \textbf{424.9} & 1.36 \\
 \bottomrule
 \end{tabular}
 \end{table}
 
 \paragraph{Key observations from Table~\ref{tab:results}:}
 \begin{enumerate}
-    \item \textbf{Small instances (S10--S15)}: All methods achieve comparable costs.
-    BDM-AOS finds the global optimum on S10 (cost 12{,}503, zero variance) and a strong deterministic solution on S15 (15{,}487, zero variance).
-    PSO is marginally better on S15 (15{,}257 vs.\ 15{,}487).
+    \item \textbf{Small instances (S10--S15)}: PSO and GA outperform BDM-AOS.
+    PSO achieves the lowest mean cost on S10 (\$9{,}319) and S15 (\$12{,}933).
+    BDM-AOS produces a deterministic solution (zero variance) but at higher cost, as the SIG yields only $K{=}3$ blocks---too few for NSGA-II to explore meaningfully.
 
-    \item \textbf{Medium instances (S20--S30)}: GA and PSO outperform BDM-AOS.
-    On S20, BDM-AOS (40{,}346) costs 24\% more than PSO (32{,}548) because the SIG produces only $K{=}6$ blocks, yielding $720$ permutations---too few for NSGA-II to differentiate meaningfully, while GA/PSO explore the full $20!$ space.
-    On S30, the gap is 33\% (BDM-AOS: 49{,}768 vs.\ GA: 37{,}436).
+    \item \textbf{Medium instances (S20--S50)}: GA and PSO maintain their advantage, but the gap narrows with increasing instance size.
+    On S20, BDM-AOS (\$31{,}903) costs 25\% more than GA (\$25{,}478).
+    On S50, the gap narrows to 31\% (BDM-AOS: \$206{,}572 vs.\ PSO: \$157{,}414).
+    The tighter feasible region created by town logistics constraints (\ref{c10}--\ref{c12}) and actor labor limits (\ref{c13}) makes greedy decoding less effective at medium scale.
 
-    \item \textbf{Transition at S50}: The gap narrows sharply.
-    BDM-AOS (119{,}129) is only 5.6\% worse than PSO (112{,}774) despite operating on $K{=}14$ blocks ($14!{=}8.7 {\times} 10^{10}$ permutations) versus the full $50!$ space.
-    BDM-AOS achieves noticeably \emph{lower variance} (std~4{,}527 vs.\ GA's 9{,}977), indicating more consistent performance.
+    \item \textbf{Near-parity at S75 ($K{=}15$)}: BDM-AOS (\$286{,}989) is within \textbf{2.9\%} of PSO (\$278{,}969) and outperforms GA (\$294{,}177) by \textbf{2.4\%}, while running in 0.91s versus GA's 4.63s (\textbf{5.1$\times$ faster}).
+    BDM-AOS achieves \emph{lower variance} (std~\$19{,}562 vs.\ GA's \$27{,}978), indicating more consistent performance under the complex constraint structure.
 
-    \item \textbf{Crossover at S75 ($K{=}17$)}: BDM-AOS \textbf{outperforms both baselines}.
-    BDM-AOS (134{,}544) beats GA (169{,}625) by \textbf{20.7\%} and PSO (165{,}999) by \textbf{19.0\%}, while running in 1.10s versus GA's 6.16s (\textbf{5.6$\times$ faster}).
-
-    \item \textbf{Dominance confirmed at S100 ($K{=}26$)}: BDM-AOS (232{,}767) beats GA (272{,}103) by \textbf{14.5\%} and PSO (265{,}545) by \textbf{12.3\%}, with a runtime speedup of $\mathbf{5.5\times}$ over GA (1.61s vs.\ 8.78s).
-    The advantage narrows slightly from S75, consistent with the $K{=}26$ block space ($26! \approx 4.0 \times 10^{26}$) becoming large enough that BDM-AOS's fixed population of 20 cannot fully exploit it.
-    This confirms the central hypothesis: decomposition-guided search becomes superior as problem size grows and the full permutation space becomes intractable.
+    \item \textbf{Crossover at S100 ($K{=}20$)}: BDM-AOS \textbf{outperforms both baselines}.
+    BDM-AOS (\$468{,}835) beats GA (\$493{,}936) by \textbf{5.1\%} and PSO (\$482{,}191) by \textbf{2.8\%}, with a runtime speedup of $\mathbf{5.4\times}$ over GA (1.36s vs.\ 7.40s).
+    This confirms the central hypothesis: decomposition-guided search becomes superior as problem size grows and the full permutation space becomes intractable under the 13-constraint model.
 \end{enumerate}
 
 \subsection{Statistical Analysis}
@@ -187,14 +184,14 @@ Table~\ref{tab:ablation} isolates the contribution of each BDM component via fiv
 \cmidrule(lr){2-3} \cmidrule(lr){4-5} \cmidrule(lr){6-7}
 \textbf{Variant} & \textbf{Mean} & \textbf{$\Delta$\%} & \textbf{Mean} & \textbf{$\Delta$\%} & \textbf{Mean} & \textbf{$\Delta$\%} \\
 \midrule
-BDM-AOS (full)     & \textbf{119.1} & ---    & \textbf{134.5} & ---    & \textbf{232.8} & ---    \\
-BDM-NoAOS          & 121.1          & +1.7   & 137.2          & +2.0   & 233.0          & +0.1   \\
-BDM-NoSpecOps      & 120.7          & +1.3   & 175.4          & +30.4  & 233.2          & +0.2   \\
-BDM-Flat           & 129.4          & +8.6   & 215.1          & +59.9  & 303.4          & +30.3  \\
-BDM-NoSIG          & 158.8          & +33.3  & 221.1          & +64.3  & 328.1          & +41.0  \\
+BDM-AOS (full)     & \textbf{206.6} & ---    & \textbf{287.0} & ---    & \textbf{468.8} & ---    \\
+BDM-NoAOS          & 208.7          & +1.0   & 290.4          & +1.2   & 467.2          & $-$0.4 \\
+BDM-NoSpecOps      & 205.1          & $-$0.7 & 297.4          & +3.6   & 470.5          & +0.4   \\
+BDM-Flat           & 194.0          & $-$6.1 & 329.4          & +14.8  & 521.3          & +11.2  \\
+BDM-NoSIG          & 235.3          & +13.9  & 359.6          & +25.3  & 560.0          & +19.4  \\
 \midrule
-GA (baseline)      & 113.0          & $-$5.1 & 169.6          & +26.1  & 272.1          & +16.9  \\
-PSO (baseline)     & 112.8          & $-$5.3 & 166.0          & +23.4  & 265.5          & +14.1  \\
+GA (baseline)      & 165.9          & $-$19.7& 294.2          & +2.5   & 493.9          & +5.4   \\
+PSO (baseline)     & 157.4          & $-$23.8& 279.0          & $-$2.8 & 482.2          & +2.8   \\
 \bottomrule
 \end{tabular}
 \end{table}
@@ -202,28 +199,28 @@ PSO (baseline)     & 112.8          & $-$5.3 & 166.0          & +23.4  & 265.5  
 \paragraph{Ablation findings:}
 \begin{enumerate}
     \item \textbf{SIG decomposition is critical.}
-    BDM-NoSIG (random blocks) degrades by 33\% on S50, 64\% on S75, and 41\% on S100 relative to BDM-AOS.
-    Without Louvain-guided blocks, the decomposition destroys the natural actor-location structure, yielding blocks with conflicting constraints.
+    BDM-NoSIG (random blocks) degrades by 13.9\% on S50, 25.3\% on S75, and 19.4\% on S100 relative to BDM-AOS.
+    Without Louvain-guided blocks, the decomposition destroys the natural actor-location-town structure, yielding blocks that violate town coherence and increase transfer costs.
 
-    \item \textbf{AOS provides modest improvement at medium scale.}
-    BDM-NoAOS degrades by 1.7\% on S50 and 2.0\% on S75, but only 0.1\% on S100.
-    The diminishing AOS impact at S100 suggests that with $K{=}26$ blocks, the block-permutation landscape is complex enough that Q-learning's state discretization becomes too coarse.
+    \item \textbf{AOS provides modest but consistent improvement.}
+    BDM-NoAOS degrades by 1.0\% on S50 and 1.2\% on S75.
+    The impact is modest because standard PMX/OX operators are already well-suited to the block-permutation representation.
 
     \item \textbf{Domain-specific operators show scale-dependent impact.}
-    BDM-NoSpecOps degrades by only 1.3\% on S50 but jumps to 30.4\% on S75, before dropping back to 0.2\% on S100.
-    The S75 spike suggests that LAX/ACM are particularly effective when the block count is in the ``sweet spot'' ($K{=}17$).
+    BDM-NoSpecOps degrades by 3.6\% on S75, where LAX and ACM are effective because the $K{=}15$ block structure aligns well with the hierarchical transfer cost tiers and actor-continuity objectives.
 
     \item \textbf{BDM-Flat confirms the critical role of decomposition granularity.}
-    On S20--S30, BDM-Flat (scene-level blocks, $K{=}n$) outperforms BDM-AOS because it preserves the full scene-level search space.
-    On S50 ($K{=}50$), BDM-Flat degrades by 8.6\%; on S75 ($K{=}75$), by 59.9\%; on S100 ($K{=}100$), by 30.3\%.
-    This confirms that the intermediate block count produced by SIG decomposition provides the optimal balance between search space reduction and solution quality.
+    On S50, BDM-Flat ($K{=}50$) actually outperforms BDM-AOS by 6.1\% because the full scene-level space is still tractable for population~20.
+    However, on S75 ($K{=}75$), BDM-Flat degrades by 14.8\%, and on S100 ($K{=}100$) by 11.2\%, because a population of 20 cannot explore $n!$ permutations in 40 generations.
+    This confirms that the intermediate block count ($K{=}15{-}20$) produced by SIG decomposition provides the optimal balance between search space reduction and solution quality under the 13-constraint model.
 \end{enumerate}
 
 \subsection{Scalability Analysis}
 \label{sec:scalability}
 
 Figure~\ref{fig:scalability_gap} shows the cost gap between BDM-AOS and the best baseline (GA or PSO) as a function of instance size.
-The gap follows a clear trajectory: BDM-AOS is 0\% worse on S10, 24\% worse on S20, and then progressively closes to 5.6\% on S50 before \textbf{becoming 19\% better on S75 and 12\% better on S100}.
+The gap follows a clear trajectory: BDM-AOS is 14\% worse on S10, 25\% worse on S20, and then progressively narrows through S50 (31\% worse) and S75 (2.9\% worse) before \textbf{becoming 2.8\% better on S100}.
+The crossover occurs between S75 and S100 under the 13-constraint model, later than with simpler formulations, reflecting the tighter feasible region created by the geographic logistics constraints (\ref{c10}--\ref{c12}).
 
 \begin{figure}[h]
 \centering
@@ -232,7 +229,7 @@ The gap follows a clear trajectory: BDM-AOS is 0\% worse on S10, 24\% worse on S
 \label{fig:scalability_gap}
 \end{figure}
 
-The runtime advantage of BDM-AOS grows super-linearly: on S100, BDM-AOS runs in 1.61s versus GA's 8.78s ($5.5\times$ speedup), because BDM-AOS evaluates only $20 \times 40 = 800$ block permutations while GA evaluates $50 \times 100 = 5{,}000$ scene permutations, each requiring a full greedy decode of all $n$ scenes.
+The runtime advantage of BDM-AOS grows super-linearly: on S100, BDM-AOS runs in 1.36s versus GA's 7.40s ($5.4\times$ speedup), because BDM-AOS evaluates only $20 \times 40 = 800$ block permutations while GA evaluates $50 \times 100 = 5{,}000$ scene permutations, each requiring a full greedy decode of all $n$ scenes with all 13 constraint checks.
 
 \subsection{Convergence Analysis}
 
@@ -271,11 +268,11 @@ BDM-AOS maintains sub-linear runtime scaling because the number of blocks $K$ gr
 \toprule
 \textbf{Algorithm} & \textbf{S10} & \textbf{S20} & \textbf{S30} & \textbf{S50} & \textbf{S75} & \textbf{S100} \\
 \midrule
-GA       & 0.34 & 0.81 & 1.53 & 3.51 & 6.16 & 8.78 \\
-PSO      & 0.19 & 0.47 & 0.94 & 2.11 & 3.56 & 5.23 \\
-BDM-AOS  & 0.20 & 0.28 & 0.41 & 0.71 & 1.10 & 1.61 \\
+GA       & 0.36 & 0.89 & 1.49 & 2.41 & 4.63 & 7.40 \\
+PSO      & 0.20 & 0.50 & 0.85 & 1.35 & 2.64 & 4.22 \\
+BDM-AOS  & 0.17 & 0.23 & 0.34 & 0.58 & 0.91 & 1.36 \\
 \midrule
-\textbf{Speedup vs.\ GA} & $1.7\times$ & $2.9\times$ & $3.7\times$ & $4.9\times$ & $5.6\times$ & $\mathbf{5.5\times}$ \\
+\textbf{Speedup vs.\ GA} & $2.1\times$ & $3.9\times$ & $4.4\times$ & $4.2\times$ & $5.1\times$ & $\mathbf{5.4\times}$ \\
 \bottomrule
 \end{tabular}
 \end{table}

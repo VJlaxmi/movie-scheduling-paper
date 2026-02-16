@@ -7,9 +7,8 @@ Our method introduces:
 (i)~a \emph{Scene Interaction Graph} (SIG) that captures actor-sharing, location-sharing, and transfer-cost coupling between scenes, enabling Louvain community detection to partition scenes into tightly coupled \emph{shooting blocks};
 (ii)~a bi-level framework where NSGA-II evolves block permutations at the upper level while a global greedy decoder schedules scenes in block-guided order, simultaneously optimizing cost and makespan;
 (iii)~a Q-learning adaptive operator selection mechanism that dynamically chooses among standard and two novel problem-specific operators---Location-Aware Crossover (LAX) and Actor-Continuity Mutation (ACM).
-Comprehensive experiments on 8 synthetic instance sizes (10--100 scenes) with 30 independent seeds per algorithm reveal a scalability crossover: while GA and PSO outperform BDM-AOS on small instances ($\leq 30$ scenes), BDM-AOS achieves \textbf{20.7\% lower cost} than GA and \textbf{19.0\% lower cost} than PSO on 75-scene instances, with a \textbf{5.6$\times$ runtime speedup}.
-On the largest 100-scene instances, BDM-AOS maintains a \textbf{14.5\%} cost advantage over GA.
-A five-variant ablation study identifies SIG decomposition as the critical component (33--64\% degradation without it).
+Comprehensive experiments on 8 synthetic instance sizes (10--100 scenes) with 30 independent seeds per algorithm reveal a scalability crossover: while GA and PSO outperform BDM-AOS on small-to-medium instances ($\leq 50$ scenes), BDM-AOS achieves near-parity on 75-scene instances and \textbf{5.1\% lower cost} than GA and \textbf{2.8\% lower cost} than PSO on 100-scene instances, with a \textbf{5.4$\times$ runtime speedup} and \textbf{40\% lower variance}.
+A five-variant ablation study identifies SIG decomposition as the critical component (14--25\% degradation without it).
 Evaluation uses hypervolume (HV) and inverted generational distance (IGD) quality indicators, with Friedman tests and Holm's post-hoc correction for statistical rigor.
 All code and data are publicly available at \url{https://github.com/VJlaxmi/movie-scheduling-paper}.
 \end{abstract}

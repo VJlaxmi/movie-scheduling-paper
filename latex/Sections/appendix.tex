@@ -11,32 +11,57 @@ All instances are generated with master seed 42 for reproducibility.
 \caption{Synthetic instance generation parameters.}
 \label{tab:instance_params}
 \small
-\begin{tabular}{lcccc}
+\begin{tabular}{lccccccc}
 \toprule
-\textbf{Config} & \textbf{Scenes} & \textbf{Actors} & \textbf{Locations} & \textbf{Horizon (days)} \\
+\textbf{Config} & $|\mathcal{S}|$ & $|\mathcal{A}|$ & $|\mathcal{C}|$ & $|\mathcal{I}|$ & $|\mathcal{L}|$ & $T$ \\
 \midrule
-S10  & 10  & 5   & 3  & 15  \\
-S15  & 15  & 8   & 4  & 25  \\
-S20  & 20  & 10  & 5  & 35  \\
-S25  & 25  & 12  & 6  & 45  \\
-S30  & 30  & 15  & 7  & 55  \\
-S50  & 50  & 20  & 10 & 90  \\
-S75  & 75  & 35  & 12 & 120 \\
-S100 & 100 & 43  & 15 & 150 \\
+S10  & 10  & 5   & 1  & 2  & 3  & 15  \\
+S15  & 15  & 8   & 1  & 2  & 4  & 25  \\
+S20  & 20  & 10  & 2  & 3  & 5  & 35  \\
+S25  & 25  & 12  & 2  & 4  & 6  & 45  \\
+S30  & 30  & 15  & 2  & 4  & 7  & 55  \\
+S50  & 50  & 20  & 3  & 6  & 10 & 90  \\
+S75  & 75  & 35  & 4  & 8  & 12 & 120 \\
+S100 & 100 & 43  & 5  & 10 & 15 & 150 \\
 \bottomrule
 \end{tabular}
 \end{table}
 
-For each instance:
+For each instance, parameters are drawn as follows:
+
+\paragraph{Scene parameters.}
 \begin{itemize}
-    \item Scene durations are drawn uniformly from $\{1, 2, 3, 4\}$ hours;
-    \item Each scene requires 1--3 actors, assigned randomly with uniform probability;
+    \item Scene durations: $\delta_s \sim U\{1, 2, 3, 4\}$ hours;
+    \item Each scene requires 1--4 actors, assigned with uniform probability;
     \item Each scene is compatible with 1--2 locations;
-    \item Actor daily wages are drawn from $U(500, 2000)$;
-    \item Transfer costs between locations are drawn from $U(100, 500)$;
-    \item Actor availability is $\sim$80\% of the planning horizon;
-    \item 10\% of scene pairs have precedence constraints;
-    \item Daily capacity is 8 hours.
+    \item Time windows assigned to $\sim$40\% of scenes;
+    \item Soft deadlines assigned to $\sim$30\% of scenes, penalties $\rho_s \sim U(50, 500)$.
+\end{itemize}
+
+\paragraph{Actor parameters.}
+\begin{itemize}
+    \item Daily wages: $w_a \sim U(80, 1000)$ (following~\citet{liu2019});
+    \item Availability: $\sim$80\% of the planning horizon;
+    \item Criticality weights: $\kappa^A_a \sim U(1, 10)$;
+    \item Maximum consecutive working days: $\bar{h}_a \sim U\{3, 4, 5, 6\}$.
+\end{itemize}
+
+\paragraph{Location hierarchy parameters.}
+\begin{itemize}
+    \item Cities: $|\mathcal{C}| = \max(1, \lfloor |\mathcal{L}|/3 \rfloor)$;
+    \item Towns: $|\mathcal{I}| = \max(2, \lfloor 2|\mathcal{L}|/3 \rfloor)$, distributed across cities;
+    \item Location availability: $\sim$85\% of the planning horizon;
+    \item Criticality weights: $\kappa^L_l \sim U(1, 10)$;
+    \item Intra-town transfer costs: $\tau^{\text{loc}} \sim U(100, 500)$;
+    \item Inter-town transfer costs: $\tau^{\text{town}} \sim U(500, 2000)$;
+    \item Inter-city transfer costs: $\tau^{\text{city}} \sim U(2000, 8000)$.
+\end{itemize}
+
+\paragraph{Structural parameters.}
+\begin{itemize}
+    \item Precedence constraints: $\sim$20\% of scene pairs form a sparse DAG;
+    \item Daily capacity: $W_{\max} = 8$ hours;
+    \item All 13 constraint families (C1--C13) are active.
 \end{itemize}
 
 \section{Hyperparameter Sensitivity Analysis}

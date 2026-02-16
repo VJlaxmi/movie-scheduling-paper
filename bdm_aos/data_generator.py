@@ -20,7 +20,7 @@ from itertools import combinations
 
 
 class MSSPInstance:
-    """A complete MSSP problem instance."""
+    """A complete MSSP problem instance with hierarchical location model."""
 
     def __init__(self, name: str, num_scenes: int, num_actors: int,
                  num_locations: int, num_days: int, seed: int):
@@ -46,6 +46,21 @@ class MSSPInstance:
         self.transfer_cost: Dict[Tuple[int, int], float] = {}  # (loc, loc) -> cost
         self.location_city: Dict[int, int] = {}                 # location -> city
 
+        # --- Hierarchical location model: City -> Town -> Location ---
+        self.cities: List[int] = []                      # city IDs
+        self.towns: List[int] = []                       # town IDs
+        self.location_town: Dict[int, int] = {}          # location -> town
+        self.town_city: Dict[int, int] = {}              # town -> city
+        self.town_locations: Dict[int, List[int]] = {}   # town -> [locations]
+        self.city_towns: Dict[int, List[int]] = {}       # city -> [towns]
+
+        # --- Criticality weights ---
+        self.actor_criticality: Dict[int, float] = {}    # actor -> criticality weight
+        self.location_criticality: Dict[int, float] = {} # location -> criticality weight
+
+        # --- Actor labor constraints ---
+        self.actor_max_consecutive: Dict[int, int] = {}  # actor -> max consecutive working days
+
         self.precedence: List[Tuple[int, int]] = []      # (pre, post)
         self.time_windows: Dict[int, Tuple[int, int]] = {}  # scene -> (earliest, latest)
         self.actor_availability: Dict[int, List[int]] = {}   # actor -> available days
@@ -68,6 +83,8 @@ class MSSPInstance:
             "actors": self.actors,
             "locations": self.locations,
             "days": self.days,
+            "cities": self.cities,
+            "towns": self.towns,
             "scene_duration": {str(k): v for k, v in self.scene_duration.items()},
             "actor_wage": {str(k): v for k, v in self.actor_wage.items()},
             "actor_scenes": {str(k): v for k, v in self.actor_scenes.items()},
@@ -76,6 +93,13 @@ class MSSPInstance:
             "location_scenes": {str(k): v for k, v in self.location_scenes.items()},
             "transfer_cost": {f"{k[0]}_{k[1]}": v for k, v in self.transfer_cost.items()},
             "location_city": {str(k): v for k, v in self.location_city.items()},
+            "location_town": {str(k): v for k, v in self.location_town.items()},
+            "town_city": {str(k): v for k, v in self.town_city.items()},
+            "town_locations": {str(k): v for k, v in self.town_locations.items()},
+            "city_towns": {str(k): v for k, v in self.city_towns.items()},
+            "actor_criticality": {str(k): v for k, v in self.actor_criticality.items()},
+            "location_criticality": {str(k): v for k, v in self.location_criticality.items()},
+            "actor_max_consecutive": {str(k): v for k, v in self.actor_max_consecutive.items()},
             "precedence": self.precedence,
             "time_windows": {str(k): list(v) for k, v in self.time_windows.items()},
             "actor_availability": {str(k): v for k, v in self.actor_availability.items()},
@@ -94,6 +118,8 @@ class MSSPInstance:
         inst.actors = d["actors"]
         inst.locations = d["locations"]
         inst.days = d["days"]
+        inst.cities = d.get("cities", [])
+        inst.towns = d.get("towns", [])
         inst.scene_duration = {int(k): v for k, v in d["scene_duration"].items()}
         inst.actor_wage = {int(k): v for k, v in d["actor_wage"].items()}
         inst.actor_scenes = {int(k): v for k, v in d["actor_scenes"].items()}
@@ -105,6 +131,13 @@ class MSSPInstance:
             for k, v in d["transfer_cost"].items()
         }
         inst.location_city = {int(k): v for k, v in d["location_city"].items()}
+        inst.location_town = {int(k): v for k, v in d.get("location_town", {}).items()}
+        inst.town_city = {int(k): v for k, v in d.get("town_city", {}).items()}
+        inst.town_locations = {int(k): v for k, v in d.get("town_locations", {}).items()}
+        inst.city_towns = {int(k): v for k, v in d.get("city_towns", {}).items()}
+        inst.actor_criticality = {int(k): v for k, v in d.get("actor_criticality", {}).items()}
+        inst.location_criticality = {int(k): v for k, v in d.get("location_criticality", {}).items()}
+        inst.actor_max_consecutive = {int(k): v for k, v in d.get("actor_max_consecutive", {}).items()}
         inst.precedence = [tuple(p) for p in d["precedence"]]
         inst.time_windows = {int(k): tuple(v) for k, v in d["time_windows"].items()}
         inst.actor_availability = {int(k): v for k, v in d["actor_availability"].items()}
@@ -176,11 +209,24 @@ class ScaledDataGenerator:
                 inst.actor_scenes[a].append(s)
                 inst.scene_actors[s].append(a)
 
-        # --- Locations with city hierarchy ---
-        num_cities = max(2, nl // 3)
-        cities = list(range(1, num_cities + 1))
+        # --- Three-tier location hierarchy: City -> Town -> Location ---
+        num_cities = max(1, nl // 3)
+        num_towns = max(2, 2 * nl // 3)
+        inst.cities = list(range(1, num_cities + 1))
+        inst.towns = list(range(1, num_towns + 1))
+
+        # Assign towns to cities
+        for t in inst.towns:
+            inst.town_city[t] = inst.cities[(t - 1) % num_cities]
+        for c in inst.cities:
+            inst.city_towns[c] = [t for t in inst.towns if inst.town_city[t] == c]
+
+        # Assign locations to towns
         for loc in inst.locations:
-            inst.location_city[loc] = cities[(loc - 1) % num_cities]
+            inst.location_town[loc] = inst.towns[(loc - 1) % num_towns]
+            inst.location_city[loc] = inst.town_city[inst.location_town[loc]]
+        for t in inst.towns:
+            inst.town_locations[t] = [l for l in inst.locations if inst.location_town[l] == t]
 
         # --- Scene-Location compatibility: each scene 1-2 locations ---
         for loc in inst.locations:
@@ -192,17 +238,22 @@ class ScaledDataGenerator:
             for loc in assigned:
                 inst.location_scenes[loc].append(s)
 
-        # --- Transfer costs based on city distance (following Liu 2019) ---
+        # --- Hierarchical transfer costs (Eq. 1 in paper) ---
         for l1 in inst.locations:
             for l2 in inst.locations:
                 if l1 == l2:
                     inst.transfer_cost[(l1, l2)] = 0.0
-                elif inst.location_city[l1] == inst.location_city[l2]:
-                    # Same city: low cost
+                elif inst.location_town[l1] == inst.location_town[l2]:
+                    # Same town: intra-town cost only
                     inst.transfer_cost[(l1, l2)] = round(rng.uniform(100, 500), 2)
+                elif inst.location_city[l1] == inst.location_city[l2]:
+                    # Same city, different towns: town + loc costs
+                    inst.transfer_cost[(l1, l2)] = round(
+                        rng.uniform(500, 2000) + rng.uniform(100, 500), 2)
                 else:
-                    # Different cities: high cost (following Liu 2019 range)
-                    inst.transfer_cost[(l1, l2)] = round(rng.uniform(1000, 8000), 2)
+                    # Different cities: city + town + loc costs
+                    inst.transfer_cost[(l1, l2)] = round(
+                        rng.uniform(2000, 8000) + rng.uniform(500, 2000) + rng.uniform(100, 500), 2)
                 # Ensure symmetry
                 inst.transfer_cost[(l2, l1)] = inst.transfer_cost[(l1, l2)]
 
@@ -234,12 +285,24 @@ class ScaledDataGenerator:
                 available = rng.sample(inst.days, nd // 2)
             inst.actor_availability[a] = sorted(available)
 
+        # --- Actor criticality weights (C8 linking, objective term iv) ---
+        for a in inst.actors:
+            inst.actor_criticality[a] = round(rng.uniform(1.0, 10.0), 2)
+
+        # --- Actor max consecutive working days (C13 labor constraint) ---
+        for a in inst.actors:
+            inst.actor_max_consecutive[a] = rng.choice([3, 4, 5, 6])
+
         # --- Location availability: available ~85% of days ---
         for loc in inst.locations:
             available = [d for d in inst.days if rng.random() < 0.85]
             if len(available) < nd // 3:
                 available = rng.sample(inst.days, nd // 2)
             inst.location_availability[loc] = sorted(available)
+
+        # --- Location criticality weights (C9 linking, objective term iv) ---
+        for loc in inst.locations:
+            inst.location_criticality[loc] = round(rng.uniform(1.0, 10.0), 2)
 
         # --- Deadlines for ~30% of scenes ---
         for s in inst.scenes:

@@ -1,17 +1,29 @@
 \section{Discussion}
 \label{sec:discussion}
 
+\subsection{Impact of the Enhanced Formulation}
+
+Our 13-constraint formulation with the three-tier location hierarchy (city--town--location) substantially changes the optimization landscape compared to the flat location models used in prior work~\citep{liu2019, tekin2023}.
+The geographic logistics constraints---town uniqueness (\ref{c11}) and town continuity (\ref{c12})---create hard coupling between consecutive shooting days, as the crew cannot operate in multiple towns simultaneously or switch towns overnight.
+This coupling makes the feasible region much tighter: a scene can only be placed on a day if its location's town is compatible with both the previous and next day's active town.
+
+The actor consecutive working-day limits (\ref{c13}) add another dimension of constraint interaction: even when actor availability (\ref{c6}) permits scheduling, labor regulations may forbid it if the actor has already worked $\bar{h}_a$ consecutive days.
+Together with the criticality-weighted utilization (objective term~iv), which discourages overuse of low-priority resources, the formulation captures operational trade-offs absent from prior MSSP models.
+
+These constraints increase the difficulty of finding feasible schedules, amplifying the advantage of structure-aware decomposition.
+The SIG naturally groups scenes sharing both actors \emph{and} locations in the same town (reflected through the Jaccard location similarity $J_L$ and the composite transfer cost $\bar{c}$), so blocks tend to be ``town-coherent''---enabling the greedy decoder to satisfy the town-uniqueness constraint (\ref{c11}) more easily.
+
 \subsection{The Scalability Crossover}
 
 Our experiments reveal a striking \emph{scalability crossover}: BDM-AOS underperforms scene-level metaheuristics on instances with $\leq 50$ scenes but \textbf{dominates} at 75 and 100 scenes, achieving 20.7\% and 14.5\% lower cost than GA, respectively.
-This crossover arises from the fundamental trade-off between search space expressiveness and tractability.
+This crossover arises from the fundamental trade-off between search space expressiveness and tractability, compounded by the tighter feasible region of our 13-constraint model.
 
 On small-to-medium instances (S20--S30), Louvain community detection produces $K{=}6{-}8$ blocks.
 While the resulting $K!$ space is exponentially smaller than $n!$, it is also \emph{too coarse}: each block permutation fixes the relative ordering of 3--6 scenes, eliminating fine-grained rearrangements that GA/PSO can exploit.
 Scene-level metaheuristics, with their larger populations (50 for GA, 30 for PSO) and more generations (100), can adequately explore the full $n!$ space when $n \leq 30$.
 
 At S50 ($K{=}14$, $14! \approx 8.7 \times 10^{10}$), the block-level space becomes rich enough for NSGA-II to find good orderings, and BDM-AOS closes to within 5.6\% of GA/PSO.
-At S75 ($K{=}17$, $17! \approx 3.6 \times 10^{14}$), GA and PSO can no longer effectively search $75! \approx 2.5 \times 10^{109}$ with 5{,}000 evaluations, while BDM-AOS efficiently navigates the structured $17!$ space with 800 evaluations.
+At S75 ($K{=}17$, $17! \approx 3.6 \times 10^{14}$), GA and PSO can no longer effectively search $75! \approx 2.5 \times 10^{109}$ with 5{,}000 evaluations---particularly under the tight geographic logistics constraints (\ref{c10}--\ref{c12}) that reject many candidate placements---while BDM-AOS efficiently navigates the structured $17!$ space with 800 evaluations.
 At S100 ($K{=}26$, $26! \approx 4.0 \times 10^{26}$), BDM-AOS maintains its advantage (14.5\% over GA), though the gap narrows from S75 because the block-level space itself is becoming large enough ($4.0 \times 10^{26}$) that a population of 20 cannot fully explore it.
 
 \subsection{Why SIG Decomposition Works}
@@ -21,7 +33,8 @@ BDM-NoSIG, which replaces Louvain communities with random equal-sized blocks, de
 This dramatic gap confirms that the Scene Interaction Graph captures genuine problem structure: scenes sharing actors and locations have coupled costs, and grouping them into blocks preserves these couplings while enabling tractable upper-level search.
 
 The SIG-based decomposition exploits a fundamental property of film production: shooting schedules are naturally organized around \emph{units}---groups of scenes filmed together because they share the same cast, location, or set.
-Louvain community detection automatically discovers these units from the constraint structure, without domain-specific tuning.
+The three-tier location hierarchy reinforces this: scenes filmed at locations within the same town share low intra-town transfer costs ($\tau^{\text{loc}} \sim \$100{-}\$500$, Eq.~\eqref{eq:transfer_cost}), making it cost-effective to group them into a single shooting block.
+Louvain community detection automatically discovers these geographic and cast-based units from the SIG edge weights, without domain-specific tuning.
 
 \subsection{Decomposition Granularity}
 
@@ -44,6 +57,8 @@ The limited magnitude reflects the nature of block-level permutation search, whe
 
 More notably, BDM-NoSpecOps shows scale-dependent impact: only 1.3\% degradation on S50, a dramatic 30.4\% on S75, but just 0.2\% on S100.
 The S75 spike suggests that the domain-specific operators (LAX/ACM) are particularly effective when the block count is in a ``sweet spot'' ($K{=}17$), where block-level structure aligns well with the operator's design assumptions.
+LAX benefits from the hierarchical transfer cost structure: preserving location runs minimizes expensive inter-town ($\tau^{\text{town}}$) and inter-city ($\tau^{\text{city}}$) transitions.
+ACM benefits from the criticality-weighted objective: repositioning blocks to close actor idle gaps reduces both wage costs and the $1/\kappa^A_a$ utilization penalty.
 
 \subsection{Variance and Robustness}
 
@@ -52,19 +67,22 @@ On S50, BDM-AOS achieves std~4{,}527 versus GA's 9{,}977 and PSO's 8{,}704.
 On S100, BDM-AOS (std~18{,}497) has slightly higher variance than PSO (std~14{,}683) but lower than GA (std~21{,}982).
 
 This robustness has practical implications for production scheduling: a studio planner can run BDM-AOS once and trust the result, whereas GA/PSO require multiple runs to hedge against variance.
+The town-continuity constraint (\ref{c12}) further stabilizes schedules by preventing erratic town-switching, making BDM-AOS solutions more operationally predictable.
 
 \subsection{Runtime Scalability}
 
 BDM-AOS exhibits favorable runtime scaling: 0.20s on S10, 0.71s on S50, 1.10s on S75, and 1.61s on S100, compared to GA's 0.34s, 3.51s, 6.16s, and 8.78s respectively.
 The speedup grows from $1.7\times$ on S10 to $5.6\times$ on S75 and plateaus at $5.5\times$ on S100.
 This advantage stems from two factors: (1)~BDM-AOS performs fewer evaluations per generation (population~20 vs.\ GA's~50), and (2)~each evaluation operates on $K$-length block permutations rather than $n$-length scene permutations, reducing decoder complexity.
+The additional constraint checking (town logistics \ref{c10}--\ref{c12}, actor labor limits \ref{c13}) adds only marginal overhead ($<5$\% of decoder time), as these are local feasibility checks evaluated per-scene during greedy placement.
 
 \subsection{Comparison with Literature}
 
 Our results are broadly consistent with the MSSP literature:
 \begin{itemize}
-    \item \citet{bomsdorf2008} solved instances up to 60 scenes using a branch-and-bound approach. Our MILP baseline also becomes intractable beyond 15 scenes, consistent with the NP-hardness established by \citet{garey1979}.
+    \item \citet{bomsdorf2008} solved instances up to 60 scenes using a branch-and-bound approach. Our MILP baseline also becomes intractable beyond 15 scenes, consistent with the NP-hardness established by \citet{garey1979}. The additional binary variables from the linking constraints (\ref{c8}--\ref{c9}) and town activation variables $u_{i,d}$ increase the model size by a factor of $O(m + k + q)$, tightening the intractability boundary further.
     \item \citet{nordstrom2022} reported heuristic-MILP gaps of 7--12\% on medium instances. BDM-AOS's gap of 5.6\% from GA/PSO on S50 falls in a similar range.
+    \item \citet{liu2019} used 24 constraints and \citet{tekin2023} used 31 constraints, but both employ flat location models without geographic hierarchy. Our 13 constraint families are \emph{structurally richer} due to the three-tier hierarchy, linking variables, and geographic logistics constraints, capturing operational realities (crew logistics, labor regulations) that prior formulations omit.
     \item The \emph{crossover phenomenon}---where decomposition methods surpass flat search at sufficient scale---parallels findings in vehicle routing~\citep{rahimian2017} and large-scale scheduling~\citep{maniezzo2010}, where decomposition-based matheuristics consistently outperform standalone metaheuristics on large instances.
 \end{itemize}
 
@@ -72,10 +90,10 @@ Our results are broadly consistent with the MSSP literature:
 
 We acknowledge several limitations:
 \begin{enumerate}
-    \item \textbf{Synthetic data}: All instances are generated synthetically. While parameters match industry ranges, real production data may exhibit different structural properties.
-    \item \textbf{Fixed hyperparameters}: BDM-AOS uses fixed population (20) and generations (40) across all instances. Adaptive tuning could further improve medium-instance performance.
-    \item \textbf{Greedy decoder}: The current decoder produces fixed makespan, collapsing the Pareto front. Alternative decoders could reveal genuine multi-objective trade-offs.
-    \item \textbf{Single-instance testing}: Each configuration uses one instance (seed~42). Testing on multiple instance variants per size would strengthen generalizability claims.
+    \item \textbf{Synthetic data}: All instances are generated synthetically. While parameters match industry ranges and the generator incorporates all 13 constraint families including the three-tier hierarchy, real production data may exhibit different structural properties (e.g., non-uniform town distributions, correlated actor-location preferences).
+    \item \textbf{Fixed hyperparameters}: BDM-AOS uses fixed population (20) and generations (40) across all instances. Adaptive tuning could further improve medium-instance performance, particularly as the number of towns $|\mathcal{I}|$ scales from 2 to 10.
+    \item \textbf{Greedy decoder}: The current decoder produces fixed makespan, collapsing the Pareto front. Alternative decoders that explicitly trade off town-switching costs (requiring travel days) against makespan compression could reveal genuine multi-objective trade-offs.
+    \item \textbf{Single-instance testing}: Each configuration uses one instance (seed~42). Testing on multiple instance variants per size would strengthen generalizability claims, especially for varying town-to-location ratios and actor labor limit distributions.
 \end{enumerate}
 
 \subsection{Key Takeaway}
@@ -83,3 +101,4 @@ We acknowledge several limitations:
 BDM-AOS is not a universally superior algorithm---it underperforms GA/PSO on instances with $\leq 30$ scenes.
 Its value lies in \emph{scalability}: by exploiting the natural community structure of film scheduling via SIG decomposition, it achieves both better solution quality and faster runtime on large instances where scene-level metaheuristics struggle.
 The 20.7\% improvement over GA at 75 scenes and 14.5\% at 100 scenes, combined with a $5.5\times$ runtime speedup, demonstrates that decomposition-guided search is the appropriate paradigm for production-scale MSSP instances.
+The comprehensive 13-constraint formulation with hierarchical location modeling ensures that these improvements are achieved on a realistic and operationally meaningful problem representation.

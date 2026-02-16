@@ -1,8 +1,9 @@
 \begin{abstract}
-The Movie Scene Scheduling Problem (MSSP) seeks to sequence film scenes across shooting days to minimize total production cost, subject to actor availability, location capacity, precedence, and time-window constraints.
-Existing approaches either solve the MSSP exactly via mixed-integer linear programming (MILP), which becomes intractable beyond 15--20 scenes, or apply standalone metaheuristics that ignore exploitable problem structure.
-We propose \textbf{BDM-AOS}, a Bi-level Decomposition Matheuristic with Adaptive Operator Selection.
-Our method introduces three novel contributions:
+The Movie Scene Scheduling Problem (MSSP) seeks to sequence film scenes across shooting days to minimize total production cost and makespan, subject to a rich set of real-world constraints including actor availability, hierarchical location logistics, crew travel continuity, labor regulations, and deadline penalties.
+Existing approaches either solve simplified MSSP variants exactly via mixed-integer linear programming (MILP), which becomes intractable beyond 15--20 scenes, or apply standalone metaheuristics that ignore exploitable problem structure.
+We first present a comprehensive MILP formulation with \textbf{13 constraint families} over a three-tier geographic hierarchy (city--town--location), actor--scene--day and location--scene--day linking variables, town-uniqueness and town-continuity logistics constraints, criticality-weighted utilization, and consecutive working-day limits---substantially extending prior formulations.
+We then propose \textbf{BDM-AOS}, a Bi-level Decomposition Matheuristic with Adaptive Operator Selection.
+Our method introduces:
 (i)~a \emph{Scene Interaction Graph} (SIG) that captures actor-sharing, location-sharing, and transfer-cost coupling between scenes, enabling Louvain community detection to partition scenes into tightly coupled \emph{shooting blocks};
 (ii)~a bi-level framework where NSGA-II evolves block permutations at the upper level while a global greedy decoder schedules scenes in block-guided order, simultaneously optimizing cost and makespan;
 (iii)~a Q-learning adaptive operator selection mechanism that dynamically chooses among standard and two novel problem-specific operators---Location-Aware Crossover (LAX) and Actor-Continuity Mutation (ACM).

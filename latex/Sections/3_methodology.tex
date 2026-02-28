@@ -5,9 +5,11 @@
 \label{sec:formulation}
 
 We formulate the MSSP as a multi-objective mixed-integer program over a hierarchical location structure, capturing the full complexity of real-world film production logistics.
+Building on our earlier single-objective scheduling work~\citep{vjlaxmi2024}, we substantially extend the constraint model with six new constraint families governing equipment sharing, actor booking contracts, mandatory scene coordination, location concurrency, and lead-actor welfare regulations---yielding a formulation with \textbf{19 constraint families} that supersedes prior work~\citep{liu2019,tekin2023}.
 
 \paragraph{Primary Sets.}
 Let $\mathcal{S} = \{s_1, \ldots, s_n\}$ be the set of scenes, $\mathcal{A} = \{a_1, \ldots, a_m\}$ the actors, $\mathcal{D} = \{1, \ldots, T\}$ the planning horizon of available shooting days, and $\mathcal{P} \subseteq \mathcal{S} \times \mathcal{S}$ the set of precedence pairs.
+Let $\mathcal{A}^P \subseteq \mathcal{A}$ denote the subset of \emph{principal (lead) actors} subject to enhanced welfare constraints.
 
 \paragraph{Hierarchical Location Model.}
 Real film productions operate across a three-tier geographic hierarchy: \emph{cities} (production bases), \emph{towns} (districts within cities), and \emph{locations} (specific shooting venues within towns).
@@ -34,12 +36,20 @@ Each actor $a \in \mathcal{A}$ has:
 daily wage $w_a$;
 availability calendar $\mathcal{D}_a \subseteq \mathcal{D}$;
 criticality weight $\kappa^A_a \in \mathbb{R}_{>0}$ (reflecting contractual priority);
-maximum consecutive working days $\bar{h}_a$ (labor regulations).
+maximum consecutive working days $\bar{h}_a$ (labor regulations);
+booking window $[\beta^s_a, \beta^e_a] \subseteq \mathcal{D}$ (period under production contract);
+daily holding fee $h_a \geq 0$ (payment when booked but not shooting);
+minimum post-block rest duration $r_a$ (applicable to $a \in \mathcal{A}^P$).
+
+\paragraph{Equipment Parameters.}
+Let $\mathcal{E} = \{e_1, \ldots, e_f\}$ be the set of specialized equipment types (cameras, lighting rigs, cranes, etc.).
+Each scene $s$ requires equipment subset $E(s) \subseteq \mathcal{E}$, and the production has $\xi_e \in \mathbb{Z}_{>0}$ units of equipment type $e$ available.
 
 \paragraph{Location and Transfer Parameters.}
 Each location $l \in \mathcal{L}$ has:
 availability calendar $\mathcal{D}_l \subseteq \mathcal{D}$;
-criticality weight $\kappa^L_l \in \mathbb{R}_{>0}$ (reflecting booking difficulty).
+criticality weight $\kappa^L_l \in \mathbb{R}_{>0}$ (reflecting booking difficulty);
+concurrency capacity $\mu_l \in \mathbb{Z}_{>0}$ (maximum simultaneous scenes at location $l$ per day).
 Transfer costs capture three tiers:
 intra-town $\tau^{\text{loc}}_{l,l'}$,
 inter-town $\tau^{\text{town}}_{i,i'}$,
@@ -54,39 +64,51 @@ c_{l,l'} = \begin{cases}
 \label{eq:transfer_cost}
 \end{equation}
 
+\paragraph{Scene Coordination Parameters.}
+Let $\mathcal{G} = \{G_1, \ldots, G_p\}$ be a collection of \emph{mandatory co-scheduling groups}: for each $G_k \in \mathcal{G}$, all scenes in $G_k$ must be shot on the same day (e.g., narrative continuity shots, special-effects setups requiring joint preparation).
+Let $\mathcal{F} \subseteq \mathcal{S} \times \mathcal{S}$ be the set of \emph{separated scene pairs} with minimum required inter-scene gaps $\delta_{ij} \geq 1$ (e.g., scenes $(s_i, s_j)$ requiring $\delta_{ij}$ days between them for visual continuity, cast transformation, or location reset).
+
 \paragraph{Binary Indicator Parameters.}
 For notational convenience we define:
 $b_{a,s} = \mathbb{1}[a \in A(s)]$ (actor $a$ required for scene $s$);
 $\alpha_{a,d} = \mathbb{1}[d \in \mathcal{D}_a]$ (actor $a$ available on day $d$);
 $\lambda_{l,d} = \mathbb{1}[d \in \mathcal{D}_l]$ (location $l$ available on day $d$);
 $p_{s,l} = \mathbb{1}[l \in L(s)]$ (scene $s$ compatible with location $l$);
-$\eta_{i,l} = \mathbb{1}[l \in \mathcal{L}_i]$ (location $l$ belongs to town $i$).
+$\eta_{i,l} = \mathbb{1}[l \in \mathcal{L}_i]$ (location $l$ belongs to town $i$);
+$\mu^b_{a,d} = \mathbb{1}[d \in [\beta^s_a, \beta^e_a]]$ (actor $a$ under contract on day $d$);
+$\varepsilon_{e,s} = \mathbb{1}[e \in E(s)]$ (scene $s$ requires equipment type $e$).
 
 \paragraph{Decision Variables.}
-The model uses five families of binary decision variables:
+The model uses seven families of binary decision variables:
 \begin{align}
 x_{s,d} &\in \{0,1\} && \text{scene } s \text{ scheduled on day } d \label{var:x}\\
 y_{s,l} &\in \{0,1\} && \text{scene } s \text{ assigned to location } l \label{var:y}\\
 v_{a,s,d} &\in \{0,1\} && \text{actor } a \text{ participates in scene } s \text{ on day } d \label{var:v}\\
 z_{l,s,d} &\in \{0,1\} && \text{scene } s \text{ shot at location } l \text{ on day } d \label{var:z}\\
-u_{i,d} &\in \{0,1\} && \text{town } i \text{ is the active shooting town on day } d \label{var:u}
+u_{i,d} &\in \{0,1\} && \text{town } i \text{ is the active shooting town on day } d \label{var:u}\\
+\phi_{a,d} &\in \{0,1\} && \text{actor } a \text{ is idle (non-shooting) on booked day } d \label{var:phi}\\
+w_{a,d} &\in \{0,1\} && \text{actor } a \text{ works (in at least one scene) on day } d \label{var:w}
 \end{align}
-The linking variables $v_{a,s,d}$ and $z_{l,s,d}$ couple scene scheduling with actor participation and location usage, enabling fine-grained constraint enforcement.
+The linking variables $v_{a,s,d}$ and $z_{l,s,d}$ couple scene scheduling with actor participation and location usage.
 The town activation variable $u_{i,d}$ enforces geographic crew logistics.
+The booking idle variable $\phi_{a,d}$ captures contracted days on which an actor is not shooting, triggering holding fees in the objective.
+The working-day indicator $w_{a,d}$ provides a scene-agnostic view of actor activity, enabling enforcement of lead-actor rest periods across variable-length shooting windows.
 
 \paragraph{Bi-Objective Formulation.}
 We minimize two conflicting objectives simultaneously:
 \begin{align}
-f_1(\mathbf{x}, \mathbf{v}, \mathbf{z}) &= \underbrace{\sum_{a \in \mathcal{A}} w_a \cdot \bigl|\{d \in \mathcal{D} : \textstyle\sum_{s} v_{a,s,d} \geq 1\}\bigr|}_{\text{(i) actor daily wages}} \;+\; \underbrace{\sum_{d=2}^{T} \sum_{\substack{l, l' \in \mathcal{L} \\ l \neq l'}} c_{l,l'} \cdot \sigma_{l,l',d}}_{\text{(ii) hierarchical transfer costs}} \notag \\[4pt]
-&\quad +\; \underbrace{\sum_{s \in \mathcal{S}} \rho_s \cdot \max\bigl(0,\, \textstyle\sum_{d} d \cdot x_{s,d} - \bar{d}_s\bigr)}_{\text{(iii) deadline penalties}} \;+\; \underbrace{\sum_{(l,s,d)} \frac{z_{l,s,d}}{\kappa^L_l} \;+\; \sum_{(a,s,d)} \frac{v_{a,s,d}}{\kappa^A_a}}_{\text{(iv) criticality-weighted utilization}} \label{eq:cost}\\[8pt]
+f_1(\mathbf{x}, \mathbf{v}, \mathbf{z}, \boldsymbol{\phi}) &= \underbrace{\sum_{a \in \mathcal{A}} w_a \cdot \bigl|\{d \in \mathcal{D} : \textstyle\sum_{s} v_{a,s,d} \geq 1\}\bigr|}_{\text{(i) actor daily wages}} \;+\; \underbrace{\sum_{d=2}^{T} \sum_{\substack{l, l' \in \mathcal{L} \\ l \neq l'}} c_{l,l'} \cdot \sigma_{l,l',d}}_{\text{(ii) hierarchical transfer costs}} \notag \\[4pt]
+&\quad +\; \underbrace{\sum_{s \in \mathcal{S}} \rho_s \cdot \max\bigl(0,\, \textstyle\sum_{d} d \cdot x_{s,d} - \bar{d}_s\bigr)}_{\text{(iii) deadline penalties}} \;+\; \underbrace{\sum_{(l,s,d)} \frac{z_{l,s,d}}{\kappa^L_l} \;+\; \sum_{(a,s,d)} \frac{v_{a,s,d}}{\kappa^A_a}}_{\text{(iv) criticality-weighted utilization}} \notag \\[4pt]
+&\quad +\; \underbrace{\sum_{a \in \mathcal{A}} h_a \cdot \sum_{d \in \mathcal{D}} \phi_{a,d}}_{\text{(v) actor holding fees}} \label{eq:cost}\\[8pt]
 f_2(\mathbf{x}) &= \max_{s \in \mathcal{S}} \textstyle\sum_d d \cdot x_{s,d} \;-\; \min_{s \in \mathcal{S}} \textstyle\sum_d d \cdot x_{s,d} + 1 \label{eq:makespan}
 \end{align}
 where $\sigma_{l,l',d} = 1$ if location $l'$ is used on day $d$ and location $l$ was used on day $d{-}1$.
-Cost objective $f_1$ has four terms: (i)~actor wages paid per active day, (ii)~hierarchical transfer costs from Eq.~\eqref{eq:transfer_cost}, (iii)~deadline penalties, and (iv)~criticality-weighted utilization that penalizes usage of low-criticality resources more heavily, encouraging efficient allocation of high-value actors and premium locations.
+Cost objective $f_1$ has five terms: (i)~actor wages paid per active day, (ii)~hierarchical transfer costs from Eq.~\eqref{eq:transfer_cost}, (iii)~deadline penalties, (iv)~criticality-weighted utilization penalizing usage of low-criticality resources, and (v)~actor holding fees paid when a contracted actor is not shooting.
 Makespan $f_2$ minimizes total production duration.
 
 \paragraph{Constraints.}
-The formulation enforces 13 constraint families organized into four categories.
+The formulation enforces \textbf{19 constraint families} organized into eight categories.
+After each group of formal constraints, we provide a brief real-world interpretation to clarify the operational meaning.
 
 \medskip
 \noindent\textbf{I. Assignment Constraints.}
@@ -97,10 +119,11 @@ The formulation enforces 13 constraint families organized into four categories.
 \text{day}(s_i) + 1 &\leq \text{day}(s_j) && \forall (s_i, s_j) \in \mathcal{P} \tag{C3}\label{c3}\\
 e_s \leq \text{day}(s) &\leq l_s && \forall s \text{ with time windows} \tag{C4}\label{c4}
 \end{align}
-\ref{c1}~schedules each scene exactly once.
-\ref{c2}~assigns each scene to exactly one compatible location.
-\ref{c3}~enforces precedence with a minimum one-day separation.
-\ref{c4}~restricts scheduling within time windows, where $\text{day}(s) = \sum_{d} d \cdot x_{s,d}$.
+\textbf{Interpretation:}
+\ref{c1}~schedules each scene exactly once---no scene may be split, deferred indefinitely, or duplicated.
+\ref{c2}~assigns each scene to exactly one compatible location---a scene cannot be simultaneously staged at multiple venues.
+\ref{c3}~enforces narrative or logistic precedence with at least a one-day separation; e.g., a scene set before dawn must precede its sequel.
+\ref{c4}~restricts scene scheduling to its permitted shooting window (e.g., seasonal or contractual release windows), where $\text{day}(s) = \sum_{d} d \cdot x_{s,d}$.
 
 \medskip
 \noindent\textbf{II. Capacity and Availability Constraints.}
@@ -110,9 +133,10 @@ e_s \leq \text{day}(s) &\leq l_s && \forall s \text{ with time windows} \tag{C4}
 x_{s,d} &\leq \alpha_{a,d} && \forall s \in \mathcal{S},\; a \in A(s),\; d \in \mathcal{D} \tag{C6}\label{c6}\\
 z_{l,s,d} &\leq \lambda_{l,d} && \forall l \in L(s),\; s \in \mathcal{S},\; d \in \mathcal{D} \tag{C7}\label{c7}
 \end{align}
-\ref{c5}~caps daily shooting at $W_{\max}{=}8$ hours.
-\ref{c6}~prevents scheduling a scene when any required actor is unavailable.
-\ref{c7}~ensures locations are used only on available days.
+\textbf{Interpretation:}
+\ref{c5}~caps the total shooting duration per calendar day at $W_{\max} = 8$ hours, reflecting union-mandated shooting limits and crew fatigue regulations.
+\ref{c6}~prevents scheduling a scene on any day when at least one required actor is unavailable (due to illness, other commitments, or contractual non-availability).
+\ref{c7}~ensures locations are used only on days when they are accessible---a location may be closed for maintenance, reserved by other productions, or subject to permit restrictions.
 
 \medskip
 \noindent\textbf{III. Variable Linking Constraints.}
@@ -121,8 +145,9 @@ z_{l,s,d} &\leq \lambda_{l,d} && \forall l \in L(s),\; s \in \mathcal{S},\; d \i
 v_{a,s,d} &= x_{s,d} \cdot b_{a,s} \cdot \alpha_{a,d} && \forall a \in \mathcal{A},\; s \in \mathcal{S},\; d \in \mathcal{D} \tag{C8}\label{c8}\\
 z_{l,s,d} &= x_{s,d} \cdot p_{s,l} \cdot \lambda_{l,d} && \forall l \in \mathcal{L},\; s \in \mathcal{S},\; d \in \mathcal{D} \tag{C9}\label{c9}
 \end{align}
-\ref{c8}~forces $v_{a,s,d} = 1$ iff scene $s$ is on day $d$, actor $a$ is required, and $a$ is available.
-\ref{c9}~forces $z_{l,s,d} = 1$ iff scene $s$ is on day $d$, location $l$ is compatible, and $l$ is available.
+\textbf{Interpretation:}
+\ref{c8}~forces $v_{a,s,d} = 1$ exactly when scene $s$ is on day $d$, actor $a$ is in the cast of $s$, and $a$ is available---providing the fine-grained actor-day participation record needed for wage calculation and labor-limit enforcement.
+\ref{c9}~forces $z_{l,s,d} = 1$ exactly when scene $s$ is shot at location $l$ on day $d$ and $l$ is available---enabling transfer cost computation across the three-tier hierarchy.
 Since $b_{a,s}$, $\alpha_{a,d}$, $p_{s,l}$, $\lambda_{l,d}$ are fixed binary parameters, these reduce to linear equalities.
 
 \medskip
@@ -134,14 +159,70 @@ z_{l,s,d} &\leq u_{\phi(l),d} \cdot \eta_{\phi(l),l} \cdot \lambda_{l,d} && \for
 u_{i,d} + u_{j,d-1} &\leq 1 && \forall i, j \in \mathcal{I},\; i \neq j,\; d \geq 2 \tag{C12}\label{c12}\\
 \sum_{d'=d}^{\min(d + \bar{h}_a - 1,\, T)} \!\!\Bigl(\sum_{s \in \mathcal{S}} v_{a,s,d'}\Bigr) &\leq \bar{h}_a && \forall a \in \mathcal{A},\; d \in \mathcal{D} \tag{C13}\label{c13}
 \end{align}
-\ref{c10}~enforces location--town consistency: using location $l$ on day $d$ requires its town $\phi(l)$ to be active.
-\ref{c11}~restricts the crew to \emph{at most one active town per day}---a core logistics constraint, as crew and equipment cannot operate in multiple geographic areas simultaneously.
-\ref{c12}~enforces \emph{town continuity across consecutive days}: the crew cannot switch towns between successive shooting days, capturing the real-world constraint that overnight location changes are infeasible without a dedicated travel day.
-\ref{c13}~limits each actor to at most $\bar{h}_a$ consecutive working days, modeling labor regulations and union rules.
+\textbf{Interpretation:}
+\ref{c10}~enforces location--town consistency: using location $l$ on day $d$ requires its town $\phi(l)$ to be the active town.
+\ref{c11}~restricts the crew to \emph{at most one active town per day}---crew and equipment cannot operate in multiple geographic areas simultaneously; all active scenes must be within the same town district.
+\ref{c12}~enforces \emph{town continuity across consecutive days}: the crew cannot switch towns between successive shooting days without a dedicated travel day, capturing real-world overnight relocation infeasibility.
+\ref{c13}~limits each actor to at most $\bar{h}_a$ scenes in any rolling window of $\bar{h}_a$ consecutive days, modeling union-mandated limits on consecutive working days and preventing crew burnout.
+
+\medskip
+\noindent\textbf{V. Equipment Sharing Constraints.}
+\vspace{-4pt}
+\begin{align}
+\sum_{s \in \mathcal{S}} \varepsilon_{e,s} \cdot x_{s,d} &\leq \xi_e && \forall e \in \mathcal{E},\; d \in \mathcal{D} \tag{C14}\label{c14}
+\end{align}
+\textbf{Interpretation:}
+\ref{c14}~enforces that on any given day, the total number of scenes simultaneously requiring equipment type $e$ (cranes, underwater rigs, high-speed cameras, etc.) cannot exceed the available supply $\xi_e$.
+This models a critical real-world production bottleneck: specialized equipment is expensive to rent and often available in limited quantities, forcing the scheduler to spread equipment-intensive scenes across days.
+For standard equipment with $\xi_e \geq n$, this constraint is non-binding and incurs no overhead.
+
+\medskip
+\noindent\textbf{VI. Actor Booking and Holding Fee Constraints.}
+\vspace{-4pt}
+\begin{align}
+\phi_{a,d} &\geq \mu^b_{a,d} - \sum_{s \in \mathcal{S}} v_{a,s,d} && \forall a \in \mathcal{A},\; d \in \mathcal{D} \tag{C15}\label{c15}\\
+\phi_{a,d} &\leq \mu^b_{a,d} && \forall a \in \mathcal{A},\; d \in \mathcal{D} \tag{C15b}\label{c15b}
+\end{align}
+\textbf{Interpretation:}
+\ref{c15}~and \ref{c15b}~together force $\phi_{a,d} = 1$ exactly when actor $a$ is under contract on day $d$ (i.e., $\mu^b_{a,d} = 1$) but not shooting any scene.
+This models the real-world \emph{pay-or-play} clause in actor contracts: a production that books an actor for a window $[\beta^s_a, \beta^e_a]$ must pay the holding fee $h_a$ for every idle day within that window.
+The incentive created is to schedule scenes for contracted actors promptly within their booking windows, avoiding unnecessary idle days and wasted holding payments.
+
+\medskip
+\noindent\textbf{VII. Scene Coordination Constraints.}
+\vspace{-4pt}
+\begin{align}
+x_{s,d} &= x_{s',d} && \forall s, s' \in G_k,\; G_k \in \mathcal{G},\; d \in \mathcal{D} \tag{C16}\label{c16}\\
+\sum_{d \in \mathcal{D}} d \cdot x_{s_j,d} - \sum_{d \in \mathcal{D}} d \cdot x_{s_i,d} &\geq \delta_{ij} && \forall (s_i, s_j) \in \mathcal{F} \tag{C17}\label{c17}
+\end{align}
+\textbf{Interpretation:}
+\ref{c16}~enforces mandatory co-scheduling: all scenes within group $G_k$ must be shot on the same calendar day.
+This arises when a single elaborate set or lighting arrangement is used by multiple scenes (e.g., a complex ballroom scene requires the same setup for several shots that cannot be split across days without incurring full re-setup costs), or when scenes share a one-take practical effect.
+\ref{c17}~enforces minimum separation between paired scenes: scene $s_j$ must be scheduled at least $\delta_{ij}$ days after scene $s_i$.
+Real use cases include: post-production visual-effects windows (an on-set scene must be completed before a VFX plate is shot), actor transformation time (scenes requiring different hair/makeup states), and location reset time (a scene requiring demolition or irreversible set changes before a sequel scene can be filmed).
+
+\medskip
+\noindent\textbf{VIII. Location Concurrency and Lead-Actor Rest Constraints.}
+\vspace{-4pt}
+\begin{align}
+\sum_{s \in \mathcal{S}} z_{l,s,d} &\leq \mu_l && \forall l \in \mathcal{L},\; d \in \mathcal{D} \tag{C18}\label{c18}\\
+w_{a,d} &\geq v_{a,s,d} && \forall a \in \mathcal{A},\; s \in \mathcal{S},\; d \in \mathcal{D} \tag{C18b}\label{c18b}\\
+w_{a,d} &\leq \sum_{s \in \mathcal{S}} v_{a,s,d} && \forall a \in \mathcal{A},\; d \in \mathcal{D} \tag{C18c}\label{c18c}\\
+\sum_{d'=d}^{\min(d + \bar{h}_a + r_a - 1,\, T)} w_{a,d'} &\leq \bar{h}_a && \forall a \in \mathcal{A}^P,\; d \in \mathcal{D} \tag{C19}\label{c19}
+\end{align}
+\textbf{Interpretation:}
+\ref{c18}~limits the number of scenes simultaneously active at location $l$ on any single day to $\mu_l$.
+Some locations physically cannot support more than $\mu_l$ simultaneous shooting units due to space constraints, permit conditions, or acoustic interference between adjacent scenes (e.g., $\mu_l = 1$ for a small interior, $\mu_l = 3$ for a large studio with multiple sound stages).
+\ref{c18b}--\ref{c18c}~link the working-day indicator $w_{a,d}$ to the participation variables: $w_{a,d} = 1$ iff actor $a$ appears in at least one scene on day $d$, enabling day-level (rather than scene-level) tracking of actor activity for the rest constraint.
+\ref{c19}~enforces a mandatory \emph{rest window} for principal actors: within any rolling window of $\bar{h}_a + r_a$ consecutive days, a lead actor $a \in \mathcal{A}^P$ may work on at most $\bar{h}_a$ days.
+This guarantees at least $r_a$ rest days after every consecutive block of $\bar{h}_a$ working days, as required by guild agreements and occupational health regulations for lead performers undertaking physically or psychologically demanding roles.
+This constraint strictly subsumes \ref{c13} for lead actors, providing a stronger rest guarantee than the rolling-window limit alone.
 
 \paragraph{Formulation Complexity.}
-The model comprises $O(nmT + nkT + qT)$ binary variables and $O(nmT + nkT + q^2 T + |\mathcal{P}|)$ constraints, where $n{=}|\mathcal{S}|$, $m{=}|\mathcal{A}|$, $k{=}|\mathcal{L}|$, $q{=}|\mathcal{I}|$, $T{=}|\mathcal{D}|$.
-The linking constraints (\ref{c8}--\ref{c9}) and geographic logistics constraints (\ref{c10}--\ref{c12}) create dense variable coupling that makes direct MILP solution intractable for $n > 20$, motivating the decomposition approach in the following subsections.
+The model comprises $O(nmT + nkT + qT + mT)$ binary variables (the additional $mT$ terms from $\phi_{a,d}$ and $w_{a,d}$) and $O(nmT + nkT + q^2 T + |\mathcal{P}| + fT + |\mathcal{G}| \cdot |\mathcal{D}| + |\mathcal{F}| + kT + mT)$ constraints, where $n{=}|\mathcal{S}|$, $m{=}|\mathcal{A}|$, $k{=}|\mathcal{L}|$, $q{=}|\mathcal{I}|$, $f{=}|\mathcal{E}|$, $T{=}|\mathcal{D}|$.
+The 19 constraint families span eight structural categories, creating dense coupling among scene scheduling, actor availability, equipment sharing, location hierarchy, booking contracts, scene grouping, location concurrency, and labor regulations.
+This density makes direct MILP solution intractable for $n > 20$, motivating the decomposition approach in the following subsections.
+Compared to Liu~\citep{liu2019} (24 flat constraints) and Tekin~\citep{tekin2023} (31 constraints), our 19 \emph{structured families} capture strictly richer operational semantics through the hierarchical location model, holding-fee accounting, equipment sharing, mandatory co-scheduling, and lead-actor welfare guarantees---aspects absent from all prior formulations.
 
 \subsection{Scene Interaction Graph (SIG)}
 \label{sec:sig}
@@ -155,6 +236,7 @@ w(s_i, s_j) = \alpha \cdot J_A(s_i, s_j) + \beta \cdot J_L(s_i, s_j) + \gamma \c
 where $J_A(s_i, s_j) = \frac{|A(s_i) \cap A(s_j)|}{|A(s_i) \cup A(s_j)|}$ is the Jaccard similarity of actor sets, $J_L$ is the Jaccard similarity of location sets, $\bar{c}(s_i, s_j)$ is the average composite transfer cost between compatible locations (reflecting city/town/location distances), and $\alpha + \beta + \gamma = 1$ are weighting parameters (default: $\alpha{=}0.5$, $\beta{=}0.3$, $\gamma{=}0.2$).
 
 Scenes sharing many actors and co-located within the same town receive high edge weights, encoding the intuition that such scenes benefit from consecutive scheduling and naturally satisfy the town-uniqueness constraint~\ref{c11}.
+Additionally, scenes within the same mandatory co-scheduling group $G_k \in \mathcal{G}$ receive an artificially high edge weight (set to 1), ensuring Louvain places them in the same block.
 
 \paragraph{Louvain Decomposition.}
 We apply Louvain community detection~\citep{blondel2008} to $G$, which maximizes modularity to identify densely connected scene clusters.
@@ -173,12 +255,15 @@ Non-dominated sorting partitions the population into Pareto fronts, and crowding
 
 \paragraph{Lower Level: Global Greedy Reassembly.}
 For each block permutation $\pi$, we construct a scene-level ordering by concatenating the scenes of each block in sequence: first all scenes from $B_{\pi_1}$ (sorted by constraint tightness), then $B_{\pi_2}$, and so on.
-A global greedy decoder then processes this ordering, packing scenes into shooting days while enforcing all 13 constraint families from Section~\ref{sec:formulation}:
+A global greedy decoder then processes this ordering, packing scenes into shooting days while enforcing all 19 constraint families from Section~\ref{sec:formulation}:
 \begin{itemize}
     \item \textbf{Assignment \& Capacity} (\ref{c1}--\ref{c5}): each scene assigned to exactly one day, respecting capacity ($\leq W_{\max}$ hours/day), precedence, and time windows;
     \item \textbf{Availability} (\ref{c6}--\ref{c7}): actor and location availability calendars are checked before placement;
+    \item \textbf{Equipment sharing} (\ref{c14}): equipment counts per day are tracked and not exceeded;
     \item \textbf{Geographic logistics} (\ref{c10}--\ref{c12}): location is chosen to respect town-uniqueness (at most one active town per day) and town-continuity (no town switches on consecutive days), with transfer cost minimized using Eq.~\eqref{eq:transfer_cost};
-    \item \textbf{Labor limits} (\ref{c13}): actor consecutive working-day limits are verified before scheduling;
+    \item \textbf{Actor booking} (\ref{c15}--\ref{c15b}): idle booked days are counted to compute holding fees in the objective;
+    \item \textbf{Scene coordination} (\ref{c16}--\ref{c17}): co-scheduling groups are resolved by jointly placing all member scenes; separation constraints are enforced as additional day-assignment bounds;
+    \item \textbf{Location concurrency and labor} (\ref{c18}--\ref{c19}): location concurrency limits and lead-actor rest windows are checked before placement;
     \item Days are shared across blocks naturally, avoiding the cost overhead of isolated per-block scheduling.
 \end{itemize}
 
@@ -249,15 +334,15 @@ This preserves spatial locality, reducing inter-block transfer costs.
 
 \paragraph{Actor-Continuity Mutation (ACM).}
 ACM identifies the actor with the largest idle gap between block appearances.
-It moves the later block immediately after the earlier one, reducing the number of idle days (and thus wage payments) for that actor.
-This directly exploits the MSSP cost structure where actor wages dominate total cost.
+It moves the later block immediately after the earlier one, reducing the number of idle days (and thus wage payments and holding fees) for that actor.
+This directly exploits the MSSP cost structure where actor wages and holding fees dominate total cost.
 
 \subsection{Computational Complexity Analysis}
 \label{sec:complexity}
 
 \paragraph{Problem Complexity.}
 The MSSP is NP-hard by reduction from the single-machine weighted completion time problem~\citep{garey1979, pinedo2016}.
-Even the single-objective variant (minimizing cost only) requires searching over $n!$ scene orderings subject to the 13 constraint families---including the geographic logistics constraints (\ref{c10}--\ref{c12}) and actor labor limits (\ref{c13})---that create dense variable coupling with $O(nmT + nkT + qT)$ binary variables.
+Even the single-objective variant (minimizing cost only) requires searching over $n!$ scene orderings subject to the 19 constraint families---including the geographic logistics constraints (\ref{c10}--\ref{c12}), actor labor limits (\ref{c13}), equipment sharing (\ref{c14}), actor booking (\ref{c15}--\ref{c15b}), scene coordination (\ref{c16}--\ref{c17}), and location concurrency and lead-actor rest (\ref{c18}--\ref{c19})---that create dense variable coupling with $O(nmT + nkT + qT + mT)$ binary variables.
 
 \paragraph{Search Space Reduction.}
 BDM-AOS exploits the SIG structure to decompose $n$ scenes into $K$ blocks, reducing the upper-level search space from $O(n!)$ to $O(K!)$.

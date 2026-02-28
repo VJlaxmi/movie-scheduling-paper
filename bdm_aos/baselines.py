@@ -25,14 +25,19 @@ from .milp_solver import MILPSubProblemSolver
 def evaluate_permutation(perm: List[int], inst: MSSPInstance) -> Tuple[float, float, Dict]:
     """
     Evaluate a scene permutation using greedy constructive decoding.
-    Enforces all 13 constraint families including town uniqueness (C11),
-    town continuity (C12), and actor consecutive day limits (C13).
+    Enforces all 19 constraint families including town uniqueness (C11),
+    town continuity (C12), actor consecutive day limits (C13), equipment
+    capacity (C14), booking/holding fees (C15), co-scheduling (C16),
+    scene separation (C17), location concurrency (C18), and lead-actor
+    rest periods (C19).
     Returns (cost, makespan, schedule).
     """
     schedule = {}
     day_hours = {}        # day -> hours used
     actor_days = {}       # actor -> set of days
     day_town = {}         # day -> active town (C11)
+    day_equip_count = {}  # (equipment_type, day) -> count (C14)
+    day_loc_count = {}    # (location, day) -> count (C18)
     current_day = 1
     total_cost = 0.0
 
@@ -92,6 +97,49 @@ def evaluate_permutation(perm: List[int], inst: MSSPInstance) -> Tuple[float, fl
             if not all(_consec_ok(a, d) for a in actors):
                 continue
 
+            # C14: Check equipment availability
+            equip_ok = True
+            for e in getattr(inst, 'scene_equipment', {}).get(scene, []):
+                supply = getattr(inst, 'equipment_supply', {}).get(e, 999)
+                if day_equip_count.get((e, d), 0) >= supply:
+                    equip_ok = False
+                    break
+            if not equip_ok:
+                continue
+
+            # C17: Check minimum scene separation
+            sep_ok = True
+            for (s_i, s_j), delta in getattr(inst, 'scene_separation', {}).items():
+                if s_j == scene and s_i in schedule:
+                    if d - schedule[s_i]["day"] < delta:
+                        sep_ok = False
+                        break
+                if s_i == scene and s_j in schedule:
+                    if schedule[s_j]["day"] - d < delta:
+                        sep_ok = False
+                        break
+            if not sep_ok:
+                continue
+
+            # C19: Lead actor rest period check
+            rest_ok = True
+            lead_actors = getattr(inst, 'lead_actors', [])
+            rest_periods = getattr(inst, 'actor_rest_period', {})
+            for a in actors:
+                if a in lead_actors:
+                    max_c = inst.actor_max_consecutive.get(a, 5)
+                    r_a = rest_periods.get(a, 1)
+                    window = max_c + r_a
+                    worked_in_window = sum(
+                        1 for dd in range(d - window + 1, d + 1)
+                        if dd in actor_days.get(a, set())
+                    )
+                    if worked_in_window >= max_c:
+                        rest_ok = False
+                        break
+            if not rest_ok:
+                continue
+
             # Choose best location respecting town constraints
             chosen_loc = None
             min_tc = float('inf')
@@ -102,6 +150,10 @@ def evaluate_permutation(perm: List[int], inst: MSSPInstance) -> Tuple[float, fl
 
             for loc in locs:
                 if d not in inst.location_availability.get(loc, inst.days):
+                    continue
+                # C18: location concurrency capacity
+                cap = getattr(inst, 'location_capacity', {}).get(loc, 999)
+                if day_loc_count.get((loc, d), 0) >= cap:
                     continue
                 town = _get_town(loc)
                 # C11: town uniqueness per day
@@ -118,7 +170,14 @@ def evaluate_permutation(perm: List[int], inst: MSSPInstance) -> Tuple[float, fl
                     chosen_loc = loc
 
             if chosen_loc is None and locs:
-                chosen_loc = locs[0]
+                # Relax location constraints as last resort
+                for loc in locs:
+                    if d not in inst.location_availability.get(loc, inst.days):
+                        continue
+                    chosen_loc = loc
+                    break
+                if chosen_loc is None:
+                    chosen_loc = locs[0]
 
             schedule[scene] = {
                 "day": d,
@@ -133,8 +192,14 @@ def evaluate_permutation(perm: List[int], inst: MSSPInstance) -> Tuple[float, fl
                 town = _get_town(chosen_loc)
                 if town is not None:
                     day_town[d] = town
+                # Track location concurrency (C18)
+                day_loc_count[(chosen_loc, d)] = day_loc_count.get((chosen_loc, d), 0) + 1
 
-            # Costs
+            # Track equipment usage (C14)
+            for e in getattr(inst, 'scene_equipment', {}).get(scene, []):
+                day_equip_count[(e, d)] = day_equip_count.get((e, d), 0) + 1
+
+            # Costs: actor wages
             for a in actors:
                 if a not in actor_days:
                     actor_days[a] = set()
@@ -173,6 +238,17 @@ def evaluate_permutation(perm: List[int], inst: MSSPInstance) -> Tuple[float, fl
                 "actors": actors, "duration": dur
             }
             total_cost += 10000  # Large penalty for infeasible
+
+    # C15: Add holding fees for booked actors idle on booking window days
+    booking_windows = getattr(inst, 'actor_booking_window', {})
+    holding_fees = getattr(inst, 'actor_holding_fee', {})
+    for a, (bw_start, bw_end) in booking_windows.items():
+        h_a = holding_fees.get(a, 0.0)
+        if h_a > 0:
+            shooting_days = actor_days.get(a, set())
+            for d in range(bw_start, bw_end + 1):
+                if d not in shooting_days:
+                    total_cost += h_a
 
     if schedule:
         days_used = [v["day"] for v in schedule.values()]

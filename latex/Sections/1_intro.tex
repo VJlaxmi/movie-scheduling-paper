@@ -2,7 +2,7 @@
 \label{sec:intro}
 
 Film production is a multi-million dollar industry where shooting schedules directly impact budgets.
-The \emph{Movie Scene Scheduling Problem} (MSSP) determines the order and day assignments of scenes to minimize total production cost---comprising actor wages, hierarchical location transfer costs, deadline penalties, and criticality-weighted resource utilization---subject to a rich set of real-world constraints: actor availability calendars, a three-tier geographic location hierarchy (city--town--location), crew travel logistics that restrict town changes across consecutive days, daily shooting capacity, precedence relations, time windows, and labor regulations limiting consecutive working days.
+The \emph{Movie Scene Scheduling Problem} (MSSP) determines the order and day assignments of scenes to minimize total production cost---comprising actor wages, hierarchical location transfer costs, deadline penalties, criticality-weighted resource utilization, and actor holding fees---subject to a rich set of real-world constraints: actor availability calendars, a three-tier geographic location hierarchy (city--town--location), crew travel logistics that restrict town changes across consecutive days, daily shooting capacity, precedence relations, time windows, labor regulations limiting consecutive working days, specialized equipment sharing, mandatory scene co-scheduling groups, minimum scene separation requirements, location concurrency capacities, and lead-actor rest period requirements.
 
 The MSSP is NP-hard, reducing to a variant of the resource-constrained project scheduling problem (RCPSP)~\citep{brucker1999}.
 Exact methods based on integer linear programming (ILP) can find provably optimal solutions for small instances (10--15 scenes) but become intractable as problem size grows~\citep{liu2019, tekin2023}.
@@ -17,8 +17,8 @@ This observation motivates a decomposition approach that exploits this structure
 We propose \textbf{BDM-AOS} (Bi-level Decomposition Matheuristic with Adaptive Operator Selection), which makes the following contributions:
 
 \begin{enumerate}
-    \item \textbf{Comprehensive MILP formulation:} We present the most complete MSSP formulation to date, with 13 constraint families over a three-tier geographic hierarchy (city--town--location), actor--scene--day and location--scene--day linking variables, town-uniqueness and consecutive-day town-continuity constraints, criticality-weighted objective terms, and actor consecutive working-day limits.
-    This extends prior formulations~\citep{liu2019, tekin2023} with geographic logistics constraints and resource criticality modeling.
+    \item \textbf{Comprehensive MILP formulation:} Building on our prior single-objective scheduling work~\citep{vjlaxmi2024}, we present the most complete MSSP formulation to date, with \textbf{19 constraint families} over a three-tier geographic hierarchy (city--town--location): the 13-family baseline extended with equipment sharing (C14), actor booking/holding fees (C15), mandatory co-scheduling (C16), minimum scene separation (C17), location concurrency (C18), and lead-actor rest periods (C19).
+    This substantially extends prior formulations~\citep{liu2019, tekin2023} with operational constraints absent from all existing models.
 
     \item \textbf{Scene Interaction Graph (SIG):} A novel graph-theoretic representation where nodes are scenes and edge weights quantify coupling through actor sharing (Jaccard similarity), location sharing, and transfer cost proximity. Louvain community detection~\citep{blondel2008} on the SIG partitions scenes into shooting blocks, dramatically reducing the combinatorial search space.
 
@@ -33,6 +33,7 @@ We propose \textbf{BDM-AOS} (Bi-level Decomposition Matheuristic with Adaptive O
     \item \textbf{Multi-objective formulation:} We present the first bi-objective MSSP formulation optimizing cost and makespan simultaneously, providing a Pareto front of trade-off solutions.
 
     \item \textbf{Experimental evaluation:} Comprehensive experiments on 8 instance sizes (10--100 scenes) with 30 independent seeds per algorithm, five ablation variants, hypervolume and inverted generational distance quality indicators, and Friedman tests with Holm's post-hoc correction~\citep{garcia2009, demsar2006, holm1979}.
+    We include a detailed MILP-vs.-BDM-AOS comparison (Section~\ref{sec:milp_comparison}) reporting both objective costs and runtimes, showing BDM-AOS matches MILP optimality on small instances with up to $186\times$ speedup, and remains the only feasible approach for $n \geq 30$.
 \end{enumerate}
 
 The remainder of this paper is organized as follows.

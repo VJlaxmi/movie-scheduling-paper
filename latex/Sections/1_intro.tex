@@ -22,7 +22,7 @@ We propose \textbf{BDM-AOS} (Bi-level Decomposition Matheuristic with Adaptive O
 
     \item \textbf{Scene Interaction Graph (SIG):} A novel graph-theoretic representation where nodes are scenes and edge weights quantify coupling through actor sharing (Jaccard similarity), location sharing, and transfer cost proximity. Louvain community detection~\citep{blondel2008} on the SIG partitions scenes into shooting blocks, dramatically reducing the combinatorial search space.
 
-    \item \textbf{Bi-level Decomposition with Greedy Reassembly:} The upper level uses NSGA-II~\citep{deb2002} to evolve permutations of shooting blocks, simultaneously optimizing total cost and makespan. The lower level applies a global greedy decoder that packs scenes into days in block-guided order, enforcing all 13 constraint families. This is the first decomposition-based approach for the MSSP.
+    \item \textbf{Bi-level Decomposition with Greedy Reassembly:} The upper level uses NSGA-II~\citep{deb2002} to evolve permutations of shooting blocks, simultaneously optimizing total cost and makespan. The lower level applies a global greedy decoder that packs scenes into days in block-guided order, enforcing all 19 constraint families. This is the first decomposition-based approach for the MSSP.
 
     \item \textbf{Q-Learning Adaptive Operator Selection (AOS):} A reinforcement learning mechanism that dynamically selects among a pool of six crossover-mutation combinations, including two novel problem-specific operators:
     \begin{itemize}

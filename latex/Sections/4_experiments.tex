@@ -77,8 +77,8 @@ S10  & 12.5  & 3.8   & 12.5  & 0.20  & 0.0\%  & 0.0\%  & Optimal \\
 S15  & 14.9  & 28.4  & 15.5  & 0.22  & 4.0\%  & 0.0\%  & Optimal \\
 S20  & 35.1  & 300.0 & 40.3  & 0.28  & 14.8\% & 22.3\% & Timeout \\
 S25  & 31.2  & 300.0 & 36.9  & 0.33  & 18.3\% & 38.6\% & Timeout \\
-S30  & ---   & 300.0 & 49.8  & 0.41  & ---    & 51.4\% & No Feasible \\
-S50  & ---   & 300.0 & 119.1 & 0.71  & ---    & $>$80\%& No Feasible \\
+S30  & ---   & 300.0 & 49.8  & 0.41  & ---    & ---    & No Feasible \\
+S50  & ---   & 300.0 & 119.1 & 0.71  & ---    & ---    & No Feasible \\
 S75  & ---   & 300.0 & 134.5 & 1.10  & ---    & ---    & No Feasible \\
 S100 & ---   & 300.0 & 232.8 & 1.61  & ---    & ---    & No Feasible \\
 \bottomrule
@@ -99,7 +99,8 @@ S100 & ---   & 300.0 & 232.8 & 1.61  & ---    & ---    & No Feasible \\
 
     \item \textbf{Runtime scaling}: MILP runtime is constant at the 300-second timeout for $n \geq 20$.
     BDM-AOS scales near-linearly: runtimes of 0.20s, 0.28s, 0.41s, 0.71s, 1.10s, 1.61s for S10--S100 reflect the $O(G \cdot N \cdot n \cdot T)$ complexity (Section~\ref{sec:complexity}).
-    The speedup factor of BDM-AOS over MILP grows from $19\times$ at S10 to $\mathbf{186\times}$ at S100.
+    For S10--S15 where MILP completes, BDM-AOS is $19\times$--$129\times$ faster.
+    For $n \geq 20$, MILP exhausts its 300-second budget without finishing; BDM-AOS solves the same instance in under 2 seconds---a runtime advantage exceeding $\mathbf{186\times}$ relative to the time limit at S100.
 
     \item \textbf{The enhanced constraint model amplifies intractability}: The addition of C14--C19 (equipment sharing, booking idle variables $\phi_{a,d}$, scene co-scheduling, location concurrency $\mu_l$, and lead-actor rest variables $w_{a,d}$) significantly increases the MILP variable count and constraint density relative to the 13-constraint baseline.
     This is reflected in the rapid degradation of MILP performance at $n \geq 20$---MILP with the 13-constraint model could sometimes solve S20 to near-optimality within 300s; the 19-constraint model renders S20 already at the boundary of tractability.
@@ -293,7 +294,7 @@ The gap follows a clear trajectory: BDM-AOS is 0\% worse on S10, 24\% worse on S
 \end{figure}
 
 The runtime advantage of BDM-AOS grows super-linearly: on S100, BDM-AOS runs in 1.61s versus GA's 8.78s ($5.5\times$ speedup), because BDM-AOS evaluates only $20 \times 40 = 800$ block permutations while GA evaluates $50 \times 100 = 5{,}000$ scene permutations, each requiring a full greedy decode of all $n$ scenes.
-Compared to MILP (300s at S20+, no solution for S30+), the runtime advantage of BDM-AOS reaches $186\times$ at S100.
+Compared to MILP (300s at S20+, no solution for S30+), the runtime advantage of BDM-AOS exceeds $186\times$ relative to the MILP time limit at S100.
 
 \subsection{Convergence Analysis}
 

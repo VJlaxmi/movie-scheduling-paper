@@ -283,8 +283,8 @@ class MILPSubProblemSolver:
             if phi_pairs:
                 model.PHI = PyoSet(initialize=phi_pairs)
                 model.phi = Var(model.PHI, within=Binary)
-                model.phi_lb = ConstraintList()  # phi >= booked_indicator - sum(v)
-                model.phi_ub = ConstraintList()  # phi <= booked_indicator
+                model.phi_lb = ConstraintList()  # C15:  phi >= mu^b_{a,d} - sum(v)
+                model.phi_ub = ConstraintList()  # C15b: phi <= mu^b_{a,d}
                 for a, d in phi_pairs:
                     v_sum = sum(
                         model.x[s, d]
@@ -292,9 +292,11 @@ class MILPSubProblemSolver:
                         if a in inst.scene_actors.get(s, [])
                         and (s, d) in set(valid_sd)
                     )
-                    # phi_{a,d} >= 1 - v_sum  (lower bound)
+                    # C15:  phi_{a,d} >= 1 - v_sum  (mu^b_{a,d}=1 for all phi_pairs)
                     model.phi_lb.add(model.phi[a, d] >= 1 - v_sum)
-                    # phi_{a,d} <= 1 (always bounded since it is Binary)
+                    # C15b: phi_{a,d} <= mu^b_{a,d} = 1 (booking day)
+                    # phi is not defined for non-booking days, enforcing phi=0 there.
+                    model.phi_ub.add(model.phi[a, d] <= 1)
 
             # C16: Mandatory co-scheduling groups
             coschedule_groups = getattr(inst, 'coschedule_groups', [])

@@ -246,6 +246,144 @@ class MILPSubProblemSolver:
                                         model.town_cont.add(
                                             model.u[ti, d] + model.u[tj, d_prev] <= 1)
 
+            # C14: Equipment capacity constraints
+            equip_types = getattr(inst, 'equipment_types', [])
+            if equip_types:
+                model.equip_cap = ConstraintList()
+                for e in equip_types:
+                    supply = getattr(inst, 'equipment_supply', {}).get(e, 999)
+                    for d in available_days:
+                        scenes_needing_e = [
+                            s for s in scenes
+                            if e in getattr(inst, 'scene_equipment', {}).get(s, [])
+                        ]
+                        if len(scenes_needing_e) > supply:
+                            days_for_scenes = {
+                                s: [dd for (ss, dd) in valid_sd if ss == s]
+                                for s in scenes_needing_e
+                            }
+                            valid_scene_day = [
+                                s for s in scenes_needing_e if d in days_for_scenes.get(s, [])
+                            ]
+                            if len(valid_scene_day) > supply:
+                                model.equip_cap.add(
+                                    sum(model.x[s, d] for s in valid_scene_day) <= supply
+                                )
+
+            # C15: Actor booking / holding-fee idle variables
+            booking_windows = getattr(inst, 'actor_booking_window', {})
+            holding_fees = getattr(inst, 'actor_holding_fee', {})
+            booked_actors = [a for a in actors if a in booking_windows]
+            phi_pairs = []
+            for a in booked_actors:
+                bw = booking_windows[a]
+                for d in available_days:
+                    if bw[0] <= d <= bw[1]:
+                        phi_pairs.append((a, d))
+            if phi_pairs:
+                model.PHI = PyoSet(initialize=phi_pairs)
+                model.phi = Var(model.PHI, within=Binary)
+                model.phi_lb = ConstraintList()  # C15:  phi >= mu^b_{a,d} - sum(v)
+                model.phi_ub = ConstraintList()  # C15b: phi <= mu^b_{a,d}
+                for a, d in phi_pairs:
+                    v_sum = sum(
+                        model.x[s, d]
+                        for s in scenes
+                        if a in inst.scene_actors.get(s, [])
+                        and (s, d) in set(valid_sd)
+                    )
+                    # C15:  phi_{a,d} >= 1 - v_sum  (mu^b_{a,d}=1 for all phi_pairs)
+                    model.phi_lb.add(model.phi[a, d] >= 1 - v_sum)
+                    # C15b: phi_{a,d} <= mu^b_{a,d} = 1 (booking day)
+                    # phi is not defined for non-booking days, enforcing phi=0 there.
+                    model.phi_ub.add(model.phi[a, d] <= 1)
+
+            # C16: Mandatory co-scheduling groups
+            coschedule_groups = getattr(inst, 'coschedule_groups', [])
+            if coschedule_groups:
+                model.coschedule = ConstraintList()
+                for group in coschedule_groups:
+                    block_scenes_set = set(scenes)
+                    group_in_block = [s for s in group if s in block_scenes_set]
+                    if len(group_in_block) >= 2:
+                        for d in available_days:
+                            # All group members on same day: x[s,d] == x[s',d]
+                            days_for_first = [dd for (ss, dd) in valid_sd if ss == group_in_block[0]]
+                            for s_other in group_in_block[1:]:
+                                days_for_other = [dd for (ss, dd) in valid_sd if ss == s_other]
+                                if d in days_for_first and d in days_for_other:
+                                    model.coschedule.add(
+                                        model.x[group_in_block[0], d] == model.x[s_other, d]
+                                    )
+
+            # C17: Minimum scene separation
+            scene_separation = getattr(inst, 'scene_separation', {})
+            if scene_separation:
+                model.sep = ConstraintList()
+                block_set = set(scenes)
+                for (s_i, s_j), delta in scene_separation.items():
+                    if s_i in block_set and s_j in block_set:
+                        days_i = [d for (ss, d) in valid_sd if ss == s_i]
+                        days_j = [d for (ss, d) in valid_sd if ss == s_j]
+                        if days_i and days_j:
+                            day_i_expr = sum(d * model.x[s_i, d] for d in days_i)
+                            day_j_expr = sum(d * model.x[s_j, d] for d in days_j)
+                            model.sep.add(day_j_expr - day_i_expr >= delta)
+
+            # C18: Location concurrency capacity
+            loc_capacity = getattr(inst, 'location_capacity', {})
+            if loc_capacity:
+                model.loc_concur = ConstraintList()
+                for loc in locations:
+                    cap = loc_capacity.get(loc, 999)
+                    for d in available_days:
+                        scenes_at_loc_d = [
+                            s for s in scenes
+                            if loc in inst.scene_locations.get(s, [])
+                            and (s, d) in set(valid_sd)
+                        ]
+                        if len(scenes_at_loc_d) > cap:
+                            model.loc_concur.add(
+                                sum(model.x[s, d] for s in scenes_at_loc_d) <= cap
+                            )
+
+            # C19: Lead actor rest periods (w_{a,d} working-day indicator + rest window)
+            lead_actors_list = [a for a in getattr(inst, 'lead_actors', []) if a in set(actors)]
+            rest_periods = getattr(inst, 'actor_rest_period', {})
+            if lead_actors_list:
+                w_pairs = [(a, d) for a in lead_actors_list for d in available_days]
+                model.WD = PyoSet(initialize=w_pairs)
+                model.w = Var(model.WD, within=Binary)
+                model.w_lb = ConstraintList()
+                model.w_ub = ConstraintList()
+                model.rest = ConstraintList()
+                for a in lead_actors_list:
+                    max_consec = inst.actor_max_consecutive.get(a, 5)
+                    r_a = rest_periods.get(a, 1)
+                    window_len = max_consec + r_a
+                    for d in available_days:
+                        # w_{a,d} >= v_{a,s,d} for all s
+                        for s in scenes:
+                            if a in inst.scene_actors.get(s, []) and (s, d) in set(valid_sd):
+                                model.w_lb.add(model.w[a, d] >= model.x[s, d])
+                        # w_{a,d} <= sum_s v_{a,s,d}
+                        v_sum = sum(
+                            model.x[s, d]
+                            for s in scenes
+                            if a in inst.scene_actors.get(s, [])
+                            and (s, d) in set(valid_sd)
+                        )
+                        model.w_ub.add(model.w[a, d] <= v_sum)
+                        # C19 rest window: sum_{d'=d}^{d+h+r-1} w_{a,d'} <= h_a
+                        window_days = [
+                            dd for dd in available_days
+                            if d <= dd <= d + window_len - 1
+                        ]
+                        if len(window_days) >= window_len:
+                            model.rest.add(
+                                sum(model.w[a, dd] for dd in window_days) <= max_consec
+                            )
+
             # Objective
             wage_expr = 0
             for a in actors:
@@ -285,8 +423,16 @@ class MILPSubProblemSolver:
                         for d in [d for (ss, d) in valid_sd if ss == s]:
                             crit_expr += model.x[s, d] / ka
 
+            # Holding fee cost (C15 objective term v)
+            holding_expr = 0
+            if phi_pairs:
+                for a, d in phi_pairs:
+                    h_a = holding_fees.get(a, 0.0)
+                    if h_a > 0:
+                        holding_expr += h_a * model.phi[a, d]
+
             model.obj = Objective(
-                expr=wage_expr + transfer_expr + deadline_expr + crit_expr,
+                expr=wage_expr + transfer_expr + deadline_expr + crit_expr + holding_expr,
                 sense=minimize)
 
             solver = SolverFactory(self.solver_name)
@@ -350,6 +496,8 @@ class MILPSubProblemSolver:
         day_hours = {}  # day -> total hours used
         actor_days = {}  # actor -> set of days they work
         day_town = {}   # day -> active town (C11: at most one town per day)
+        day_equip_count = {}  # (equipment_type, day) -> count used (C14)
+        day_loc_count = {}    # (location, day) -> scenes at that location (C18)
 
         # Sort scenes by tightness: fewest valid days first
         def scene_flexibility(s):
@@ -428,11 +576,40 @@ class MILPSubProblemSolver:
                 if not consec_ok:
                     continue
 
+                # C14: Check equipment availability
+                equip_ok = True
+                for e in getattr(inst, 'scene_equipment', {}).get(s, []):
+                    supply = getattr(inst, 'equipment_supply', {}).get(e, 999)
+                    used = day_equip_count.get((e, d), 0)
+                    if used >= supply:
+                        equip_ok = False
+                        break
+                if not equip_ok:
+                    continue
+
+                # C17: Check minimum scene separation
+                sep_ok = True
+                for (s_i, s_j), delta in getattr(inst, 'scene_separation', {}).items():
+                    if s_j == s and s_i in schedule:
+                        if d - schedule[s_i]["day"] < delta:
+                            sep_ok = False
+                            break
+                    if s_i == s and s_j in schedule:
+                        if schedule[s_j]["day"] - d < delta:
+                            sep_ok = False
+                            break
+                if not sep_ok:
+                    continue
+
                 # Choose best location on this day (respecting town constraints)
                 chosen_loc = None
                 min_tc = float('inf')
                 for loc in locs:
                     if d not in inst.location_availability.get(loc, inst.days):
+                        continue
+                    # C18: location concurrency capacity
+                    cap = getattr(inst, 'location_capacity', {}).get(loc, 999)
+                    if day_loc_count.get((loc, d), 0) >= cap:
                         continue
                     town = _get_town_for_loc(loc)
                     # C11: town uniqueness - check if another town is already active
@@ -453,9 +630,12 @@ class MILPSubProblemSolver:
                     # Relax town constraints if no location found
                     for loc in locs:
                         if d in inst.location_availability.get(loc, inst.days):
-                            chosen_loc = loc
-                            min_tc = 0
-                            break
+                            # Still check location capacity (C18)
+                            cap = getattr(inst, 'location_capacity', {}).get(loc, 999)
+                            if day_loc_count.get((loc, d), 0) < cap:
+                                chosen_loc = loc
+                                min_tc = 0
+                                break
                     if chosen_loc is None:
                         chosen_loc = locs[0] if locs else None
                         min_tc = 0
@@ -504,6 +684,11 @@ class MILPSubProblemSolver:
                     town = _get_town_for_loc(best_loc)
                     if town is not None:
                         day_town[best_day] = town
+                    # Track location concurrency (C18)
+                    day_loc_count[(best_loc, best_day)] = day_loc_count.get((best_loc, best_day), 0) + 1
+                # Track equipment usage (C14)
+                for e in getattr(inst, 'scene_equipment', {}).get(s, []):
+                    day_equip_count[(e, best_day)] = day_equip_count.get((e, best_day), 0) + 1
                 placed = True
 
             if not placed:
@@ -553,6 +738,20 @@ class MILPSubProblemSolver:
                 dl = inst.scene_deadline[s]
                 if d > dl:
                     total_cost += inst.deadline_penalty.get(s, 100) * (d - dl)
+
+        # C15: Holding fees for booked actors not shooting on booking window days
+        booking_windows = getattr(inst, 'actor_booking_window', {})
+        holding_fees = getattr(inst, 'actor_holding_fee', {})
+        for a, (bw_start, bw_end) in booking_windows.items():
+            h_a = holding_fees.get(a, 0.0)
+            if h_a > 0:
+                actor_shooting_days = set()
+                for s_info in schedule.values():
+                    if a in s_info.get("actors", []):
+                        actor_shooting_days.add(s_info["day"])
+                for d in range(bw_start, bw_end + 1):
+                    if d not in actor_shooting_days:
+                        total_cost += h_a
 
         makespan = 1
         if schedule:

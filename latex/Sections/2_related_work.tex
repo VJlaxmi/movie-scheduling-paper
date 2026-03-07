@@ -19,7 +19,8 @@ This NP-hard complexity profile~\citep{garey1979} motivates metaheuristic and ma
 
 Notably, all existing MILP formulations for the MSSP employ \emph{flat} location models---locations are treated as independent entities without geographic structure.
 Real film productions operate across a multi-tier hierarchy (production cities, towns/districts, and specific venues), with transfer costs and crew logistics that vary by tier.
-Our formulation (Section~\ref{sec:formulation}) addresses this gap with a three-tier city--town--location hierarchy, linking variables that couple scenes with actor participation and location usage, town-level logistics constraints, criticality-weighted utilization, and actor labor regulations---producing 13 structured constraint families that capture operational realities absent from prior models.
+Our prior work~\citep{vjlaxmi2024} introduced a 13-family formulation with the three-tier location hierarchy and bi-objective treatment.
+The present paper extends it to a \textbf{19-family formulation} by adding equipment sharing, actor booking contracts with holding fees, mandatory co-scheduling groups, minimum scene separation, location concurrency limits, and lead-actor rest periods---constraints present in real production contracts~\citep{bomsdorf2008} but absent from all prior computational models.
 
 \subsection{Metaheuristic Approaches}
 
@@ -67,7 +68,7 @@ Statistical testing protocols for comparing stochastic algorithms~\citep{garcia2
 \subsection{Positioning of This Work}
 
 Table~\ref{tab:positioning} summarizes the landscape.
-BDM-AOS is the first MSSP approach combining (i)~a structurally rich MILP formulation with hierarchical location modeling and geographic logistics constraints, (ii)~decomposition via graph clustering, (iii)~a bi-level metaheuristic-decoder framework enforcing all 13 constraint families, (iv)~multi-objective optimization, and (v)~adaptive operator selection with problem-specific operators.
+BDM-AOS is the first MSSP approach combining (i)~the richest MILP formulation to date with 19 structured constraint families over a three-tier location hierarchy, including equipment sharing, actor booking contracts, mandatory scene coordination, and lead-actor welfare constraints, (ii)~decomposition via graph clustering, (iii)~a bi-level metaheuristic-decoder framework enforcing all 19 constraint families, (iv)~multi-objective optimization, and (v)~adaptive operator selection with problem-specific operators.
 
 \begin{table}[t]
 \centering
@@ -79,10 +80,14 @@ BDM-AOS is the first MSSP approach combining (i)~a structurally rich MILP formul
 \textbf{Feature} & \textbf{Liu} & \textbf{Long} & \textbf{Tekin} & \textbf{BDM-AOS} \\
  & \textbf{(2019)} & \textbf{(2020)} & \textbf{(2023)} & \textbf{(Ours)} \\
 \midrule
-MILP constraint families   & 24         & ---        & 31         & \textbf{13 (structured)} \\
+MILP constraint families   & 24         & ---        & 31         & \textbf{19 (structured)} \\
 Location hierarchy          & flat       & flat       & flat       & \textbf{3-tier (C/T/L)} \\
 Town logistics constraints  & ---        & ---        & ---        & \textbf{C10--C12} \\
-Actor labor constraints     & ---        & ---        & blocking   & \textbf{C13} \\
+Actor labor + rest          & ---        & ---        & blocking   & \textbf{C13, C19} \\
+Equipment sharing           & ---        & ---        & ---        & \textbf{C14} \\
+Actor booking / holding fee & ---        & ---        & ---        & \textbf{C15} \\
+Scene coordination          & ---        & ---        & ---        & \textbf{C16--C17} \\
+Location concurrency        & ---        & ---        & ---        & \textbf{C18} \\
 Criticality weighting       & ---        & ---        & ---        & \textbf{\checkmark} \\
 Single metaheuristic        & TS, PSO    & TS, PSO, ACO & PSO       & ---        \\
 Decomposition               & ---        & ---        & ---        & SIG+Louvain \\

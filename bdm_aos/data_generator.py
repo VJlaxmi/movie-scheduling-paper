@@ -68,6 +68,28 @@ class MSSPInstance:
         self.scene_deadline: Dict[int, int] = {}                # scene -> deadline day
         self.deadline_penalty: Dict[int, float] = {}            # scene -> penalty/day
 
+        # --- C14: Equipment constraints ---
+        self.equipment_types: List[int] = []                      # equipment type IDs
+        self.scene_equipment: Dict[int, List[int]] = {}           # scene -> [equipment types]
+        self.equipment_supply: Dict[int, int] = {}                # equipment type -> available units (xi_e)
+
+        # --- C15: Actor booking / holding fee (pay-or-play contracts) ---
+        self.actor_booking_window: Dict[int, Tuple[int, int]] = {}  # actor -> (beta_start, beta_end)
+        self.actor_holding_fee: Dict[int, float] = {}               # actor -> holding fee h_a per idle day
+
+        # --- C16: Mandatory co-scheduling groups ---
+        self.coschedule_groups: List[List[int]] = []  # list of [scene_ids] that must be same day
+
+        # --- C17: Minimum scene separation ---
+        self.scene_separation: Dict[Tuple[int, int], int] = {}  # (s_i, s_j) -> min days gap delta_ij
+
+        # --- C18: Location concurrency capacity ---
+        self.location_capacity: Dict[int, int] = {}  # location -> mu_l (max concurrent scenes/day)
+
+        # --- C18b/C18c + C19: Lead actor rest periods ---
+        self.lead_actors: List[int] = []             # subset A^P of principal actors
+        self.actor_rest_period: Dict[int, int] = {}  # lead actor -> r_a min rest days after full block
+
     def to_dict(self) -> dict:
         """Serialize to JSON-compatible dict."""
         return {
@@ -106,6 +128,17 @@ class MSSPInstance:
             "location_availability": {str(k): v for k, v in self.location_availability.items()},
             "scene_deadline": {str(k): v for k, v in self.scene_deadline.items()},
             "deadline_penalty": {str(k): v for k, v in self.deadline_penalty.items()},
+            # New constraint parameters (C14-C19)
+            "equipment_types": self.equipment_types,
+            "scene_equipment": {str(k): v for k, v in self.scene_equipment.items()},
+            "equipment_supply": {str(k): v for k, v in self.equipment_supply.items()},
+            "actor_booking_window": {str(k): list(v) for k, v in self.actor_booking_window.items()},
+            "actor_holding_fee": {str(k): v for k, v in self.actor_holding_fee.items()},
+            "coschedule_groups": self.coschedule_groups,
+            "scene_separation": {f"{k[0]}_{k[1]}": v for k, v in self.scene_separation.items()},
+            "location_capacity": {str(k): v for k, v in self.location_capacity.items()},
+            "lead_actors": self.lead_actors,
+            "actor_rest_period": {str(k): v for k, v in self.actor_rest_period.items()},
         }
 
     @classmethod
@@ -144,6 +177,20 @@ class MSSPInstance:
         inst.location_availability = {int(k): v for k, v in d["location_availability"].items()}
         inst.scene_deadline = {int(k): v for k, v in d.get("scene_deadline", {}).items()}
         inst.deadline_penalty = {int(k): v for k, v in d.get("deadline_penalty", {}).items()}
+        # New constraint parameters (C14-C19)
+        inst.equipment_types = d.get("equipment_types", [])
+        inst.scene_equipment = {int(k): v for k, v in d.get("scene_equipment", {}).items()}
+        inst.equipment_supply = {int(k): v for k, v in d.get("equipment_supply", {}).items()}
+        inst.actor_booking_window = {int(k): tuple(v) for k, v in d.get("actor_booking_window", {}).items()}
+        inst.actor_holding_fee = {int(k): v for k, v in d.get("actor_holding_fee", {}).items()}
+        inst.coschedule_groups = [list(g) for g in d.get("coschedule_groups", [])]
+        inst.scene_separation = {
+            (int(k.split("_")[0]), int(k.split("_")[1])): v
+            for k, v in d.get("scene_separation", {}).items()
+        }
+        inst.location_capacity = {int(k): v for k, v in d.get("location_capacity", {}).items()}
+        inst.lead_actors = d.get("lead_actors", [])
+        inst.actor_rest_period = {int(k): v for k, v in d.get("actor_rest_period", {}).items()}
         return inst
 
 
@@ -309,6 +356,62 @@ class ScaledDataGenerator:
             if rng.random() < 0.3:
                 inst.scene_deadline[s] = rng.randint(nd // 2, nd)
                 inst.deadline_penalty[s] = round(rng.uniform(50, 500), 2)
+
+        # --- C14: Equipment types and supply ---
+        num_equip = max(2, nl // 2)  # number of specialized equipment types
+        inst.equipment_types = list(range(1, num_equip + 1))
+        for e in inst.equipment_types:
+            inst.equipment_supply[e] = rng.choice([1, 2])  # 1 or 2 units available
+        for s in inst.scenes:
+            # Each scene requires 0-2 equipment types (50% of scenes need special equipment)
+            if rng.random() < 0.5:
+                n_equip = rng.randint(1, min(2, num_equip))
+                inst.scene_equipment[s] = rng.sample(inst.equipment_types, n_equip)
+            else:
+                inst.scene_equipment[s] = []
+
+        # --- C15: Actor booking windows and holding fees (~60% of actors) ---
+        for a in inst.actors:
+            if rng.random() < 0.6:
+                # Booking window: a contiguous window within the planning horizon
+                window_start = rng.randint(1, max(1, nd // 2))
+                window_length = rng.randint(max(1, nd // 4), max(2, nd * 3 // 4))
+                window_end = min(nd, window_start + window_length - 1)
+                inst.actor_booking_window[a] = (window_start, window_end)
+                # Holding fee: 20-60% of daily wage
+                inst.actor_holding_fee[a] = round(inst.actor_wage[a] * rng.uniform(0.2, 0.6), 2)
+
+        # --- C16: Mandatory co-scheduling groups ---
+        # ~10-15% of scenes grouped in pairs/triples of 2-3
+        num_groups = max(1, ns // 8)
+        ungrouped_scenes = list(inst.scenes)
+        rng.shuffle(ungrouped_scenes)
+        for _ in range(num_groups):
+            group_size = rng.randint(2, min(3, len(ungrouped_scenes)))
+            if len(ungrouped_scenes) < group_size:
+                break
+            group = ungrouped_scenes[:group_size]
+            ungrouped_scenes = ungrouped_scenes[group_size:]
+            inst.coschedule_groups.append(group)
+
+        # --- C17: Minimum scene separation (10% of scene pairs) ---
+        max_sep_pairs = max(1, ns // 10)
+        scene_pairs = [(s1, s2) for s1 in inst.scenes for s2 in inst.scenes if s1 < s2]
+        sep_pairs = rng.sample(scene_pairs, min(max_sep_pairs, len(scene_pairs)))
+        for s1, s2 in sep_pairs:
+            inst.scene_separation[(s1, s2)] = rng.randint(2, max(2, nd // 10))
+
+        # --- C18: Location concurrency capacity ---
+        for loc in inst.locations:
+            inst.location_capacity[loc] = rng.choice([1, 2, 3])
+
+        # --- C19: Lead actors and rest periods ---
+        # ~20% of actors are lead actors requiring rest periods
+        num_leads = max(1, na // 5)
+        inst.lead_actors = rng.sample(inst.actors, num_leads)
+        for a in inst.lead_actors:
+            # Rest period: 1-2 days after completing max consecutive block
+            inst.actor_rest_period[a] = rng.randint(1, 2)
 
         return inst
 

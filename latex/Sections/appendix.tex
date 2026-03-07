@@ -57,11 +57,37 @@ For each instance, parameters are drawn as follows:
     \item Inter-city transfer costs: $\tau^{\text{city}} \sim U(2000, 8000)$.
 \end{itemize}
 
+\paragraph{Equipment parameters (C14).}
+\begin{itemize}
+    \item Equipment types: $|\mathcal{E}| = \max(2, \lfloor |\mathcal{L}|/2 \rfloor)$;
+    \item Equipment supply: $\xi_e \sim U\{1, 2\}$ units per type;
+    \item Scene equipment requirements: $\sim$50\% of scenes require 1--2 equipment types.
+\end{itemize}
+
+\paragraph{Actor booking parameters (C15).}
+\begin{itemize}
+    \item Booking windows: $\sim$60\% of actors have booking window $[\beta^s_a, \beta^e_a]$, window length $\sim U(T/4, 3T/4)$;
+    \item Holding fees: $h_a \sim U(0.2, 0.6) \times w_a$ (20--60\% of daily wage).
+\end{itemize}
+
+\paragraph{Scene coordination parameters (C16--C17).}
+\begin{itemize}
+    \item Co-scheduling groups: $|\mathcal{G}| = \max(1, \lfloor n/8 \rfloor)$ groups of 2--3 scenes each;
+    \item Separation pairs: $|\mathcal{F}| = \max(1, \lfloor n/10 \rfloor)$ pairs with gap $\delta_{ij} \sim U(2, T/10)$.
+\end{itemize}
+
+\paragraph{Location and lead-actor parameters (C18--C19).}
+\begin{itemize}
+    \item Location concurrency capacity: $\mu_l \sim U\{1, 2, 3\}$;
+    \item Lead actors: $|\mathcal{A}^P| = \max(1, \lfloor m/5 \rfloor)$ (20\% of cast);
+    \item Rest periods: $r_a \sim U\{1, 2\}$ days for $a \in \mathcal{A}^P$.
+\end{itemize}
+
 \paragraph{Structural parameters.}
 \begin{itemize}
     \item Precedence constraints: $\sim$20\% of scene pairs form a sparse DAG;
     \item Daily capacity: $W_{\max} = 8$ hours;
-    \item All 13 constraint families (C1--C13) are active.
+    \item All 19 constraint families (C1--C19) are active.
 \end{itemize}
 
 \section{Hyperparameter Sensitivity Analysis}

@@ -7,6 +7,7 @@ Core algorithm combining:
   - AOS: Q-Learning adaptive operator selection
 """
 
+import math
 import random
 import time
 import numpy as np
@@ -108,8 +109,8 @@ class BDM_AOS:
             self.graph = nx.Graph()
             self.graph.add_nodes_from(inst.scenes)
         else:
-            # Standard SIG decomposition
-            min_blocks = max(3, inst.num_scenes // 5)
+            # Standard SIG decomposition: at least ceil(n/4) blocks
+            min_blocks = max(3, math.ceil(inst.num_scenes / 4))
             max_block_size = max(3, min(6, inst.num_scenes // 2))
 
             self.blocks, self.graph = self.sig.decompose(
@@ -176,11 +177,13 @@ class BDM_AOS:
             block_scenes = sorted(self.blocks[block_idx], key=scene_flexibility)
             scene_order.extend(block_scenes)
 
-        # Global greedy decoder enforcing all 13 constraint families
+        # Global greedy decoder enforcing all 19 constraint families
         schedule = {}
         day_hours = {}        # day -> hours used
         actor_days = {}       # actor -> set of days
         day_town = {}         # day -> active town (C11)
+        day_equip_count = {}  # (equipment_type, day) -> count (C14)
+        day_loc_count = {}    # (location, day) -> scene count (C18)
         total_cost = 0.0
 
         def _get_town(loc):
@@ -211,10 +214,36 @@ class BDM_AOS:
                 cd += 1
             return consec <= max_c
 
+        def _rest_ok(actor, d):
+            """C19: lead actor rest period check."""
+            lead_actors_set = set(getattr(inst, 'lead_actors', []))
+            if actor not in lead_actors_set:
+                return True
+            max_c = inst.actor_max_consecutive.get(actor, 5)
+            r_a = getattr(inst, 'actor_rest_period', {}).get(actor, 1)
+            window = max_c + r_a
+            worked_in_window = sum(
+                1 for dd in range(d - window + 1, d + 1)
+                if dd in actor_days.get(actor, set())
+            )
+            return worked_in_window < max_c
+
         for scene in scene_order:
             dur = inst.scene_duration.get(scene, 2.0)
             actors = inst.scene_actors.get(scene, [])
             locs = inst.scene_locations.get(scene, [])
+
+            # C16 co-scheduling: towns shared by ALL group members (computed once per scene)
+            cosched_allowed_towns = None
+            for _grp in getattr(inst, 'coschedule_groups', []):
+                if scene in _grp:
+                    _towns = None
+                    for _gs in _grp:
+                        _gs_towns = {_get_town(_l)
+                                     for _l in inst.scene_locations.get(_gs, [])}
+                        _towns = _gs_towns if _towns is None else _towns & _gs_towns
+                    cosched_allowed_towns = _towns if _towns else None
+                    break
 
             placed = False
             for d in range(1, inst.num_days + 1):
@@ -237,6 +266,62 @@ class BDM_AOS:
                 if not all(_consec_ok(a, d) for a in actors):
                     continue
 
+                # C14: equipment capacity
+                equip_ok = True
+                for e in getattr(inst, 'scene_equipment', {}).get(scene, []):
+                    supply = getattr(inst, 'equipment_supply', {}).get(e, 999)
+                    if day_equip_count.get((e, d), 0) >= supply:
+                        equip_ok = False
+                        break
+                if not equip_ok:
+                    continue
+
+                # C3: precedence constraints
+                prec_ok = True
+                for (pre, post) in inst.precedence:
+                    if post == scene and pre in schedule:
+                        if d <= schedule[pre]["day"]:
+                            prec_ok = False
+                            break
+                    if pre == scene and post in schedule:
+                        if schedule[post]["day"] <= d:
+                            prec_ok = False
+                            break
+                if not prec_ok:
+                    continue
+
+                # C16: co-scheduling constraints
+                cosched_ok = True
+                for group in getattr(inst, 'coschedule_groups', []):
+                    if scene in group:
+                        for gs in group:
+                            if gs != scene and gs in schedule:
+                                if schedule[gs]["day"] != d:
+                                    cosched_ok = False
+                                    break
+                    if not cosched_ok:
+                        break
+                if not cosched_ok:
+                    continue
+
+                # C17: minimum scene separation
+                sep_ok = True
+                for (s_i, s_j), delta in getattr(inst, 'scene_separation', {}).items():
+                    if s_j == scene and s_i in schedule:
+                        if d - schedule[s_i]["day"] < delta:
+                            sep_ok = False
+                            break
+                    if s_i == scene and s_j in schedule:
+                        if schedule[s_j]["day"] - d < delta:
+                            sep_ok = False
+                            break
+                if not sep_ok:
+                    continue
+
+                # C19: lead actor rest periods
+                if not all(_rest_ok(a, d) for a in actors):
+                    continue
+
                 # Choose best location respecting town constraints
                 chosen_loc = None
                 min_tc = float('inf')
@@ -248,7 +333,14 @@ class BDM_AOS:
                 for loc in locs:
                     if d not in inst.location_availability.get(loc, inst.days):
                         continue
+                    # C18: location concurrency capacity
+                    cap = getattr(inst, 'location_capacity', {}).get(loc, 999)
+                    if day_loc_count.get((loc, d), 0) >= cap:
+                        continue
                     town = _get_town(loc)
+                    # C16 co-scheduling town compatibility
+                    if cosched_allowed_towns is not None and town not in cosched_allowed_towns:
+                        continue
                     # C11: town uniqueness per day
                     if d in day_town and day_town[d] is not None and day_town[d] != town:
                         continue
@@ -262,8 +354,10 @@ class BDM_AOS:
                         min_tc = tc
                         chosen_loc = loc
 
-                if chosen_loc is None and locs:
-                    chosen_loc = locs[0]
+                if chosen_loc is None:
+                    # No location satisfies town/concurrency constraints on this day
+                    # — skip to next day rather than violating C11/C18
+                    continue
 
                 schedule[scene] = {
                     "day": d,
@@ -278,6 +372,12 @@ class BDM_AOS:
                     town = _get_town(chosen_loc)
                     if town is not None:
                         day_town[d] = town
+                    # Track location concurrency (C18)
+                    day_loc_count[(chosen_loc, d)] = day_loc_count.get((chosen_loc, d), 0) + 1
+
+                # Track equipment usage (C14)
+                for e in getattr(inst, 'scene_equipment', {}).get(scene, []):
+                    day_equip_count[(e, d)] = day_equip_count.get((e, d), 0) + 1
 
                 for a in actors:
                     if a not in actor_days:
@@ -308,13 +408,69 @@ class BDM_AOS:
                 break
 
             if not placed:
+                # Co-scheduling group: force-place on same day as already-scheduled
+                # group member to preserve C16 intent.
+                # Otherwise pick lightest day to minimise C5 violations.
+                forced_by_group = False
                 d = inst.num_days
+                for group in getattr(inst, 'coschedule_groups', []):
+                    if scene in group:
+                        for gs in group:
+                            if gs != scene and gs in schedule:
+                                d = schedule[gs]["day"]
+                                forced_by_group = True
+                                break
+                        break
+                if not forced_by_group:
+                    def _fp_day_key(day):
+                        town_set = day_town.get(day)
+                        if cosched_allowed_towns is not None:
+                            town_ok = (town_set is None or town_set in cosched_allowed_towns)
+                        else:
+                            town_ok = (town_set is None or
+                                       any(_get_town(lc) == town_set for lc in locs))
+                        return (0 if town_ok else 1, day_hours.get(day, 0))
+                    d = min(range(1, inst.num_days + 1), key=_fp_day_key)
                 loc = locs[0] if locs else None
+                # Prefer a location from co-scheduling-compatible towns first
+                if loc and cosched_allowed_towns:
+                    for candidate in locs:
+                        if _get_town(candidate) in cosched_allowed_towns:
+                            loc = candidate
+                            break
+                # Then override with day's established town (C11)
+                if loc and d in day_town and day_town[d] is not None:
+                    for candidate in locs:
+                        if _get_town(candidate) == day_town[d]:
+                            loc = candidate
+                            break
                 schedule[scene] = {
                     "day": d, "location": loc,
                     "actors": actors, "duration": dur
                 }
+                # Update state trackers even on force-place
+                day_hours[d] = day_hours.get(d, 0) + dur
+                for a in actors:
+                    actor_days.setdefault(a, set()).add(d)
+                if loc:
+                    town = _get_town(loc)
+                    if town is not None and d not in day_town:
+                        day_town[d] = town
+                    day_loc_count[(loc, d)] = day_loc_count.get((loc, d), 0) + 1
+                for e in getattr(inst, 'scene_equipment', {}).get(scene, []):
+                    day_equip_count[(e, d)] = day_equip_count.get((e, d), 0) + 1
                 total_cost += 10000
+
+        # C15: Holding fees for booked actors idle on booking window days
+        booking_windows = getattr(inst, 'actor_booking_window', {})
+        holding_fees = getattr(inst, 'actor_holding_fee', {})
+        for a, (bw_start, bw_end) in booking_windows.items():
+            h_a = holding_fees.get(a, 0.0)
+            if h_a > 0:
+                shooting_days = actor_days.get(a, set())
+                for d in range(bw_start, bw_end + 1):
+                    if d not in shooting_days:
+                        total_cost += h_a
 
         if schedule:
             days_used = [v["day"] for v in schedule.values()]

@@ -74,6 +74,18 @@ def evaluate_permutation(perm: List[int], inst: MSSPInstance) -> Tuple[float, fl
         actors = inst.scene_actors.get(scene, [])
         locs = inst.scene_locations.get(scene, [])
 
+        # C16 co-scheduling: towns shared by ALL group members (computed once per scene)
+        cosched_allowed_towns = None
+        for _grp in getattr(inst, 'coschedule_groups', []):
+            if scene in _grp:
+                _towns = None
+                for _gs in _grp:
+                    _gs_towns = {_get_town(_l)
+                                 for _l in inst.scene_locations.get(_gs, [])}
+                    _towns = _gs_towns if _towns is None else _towns & _gs_towns
+                cosched_allowed_towns = _towns if _towns else None
+                break
+
         placed = False
         for d in range(current_day, inst.num_days + 1):
             used_h = day_hours.get(d, 0)
@@ -105,6 +117,34 @@ def evaluate_permutation(perm: List[int], inst: MSSPInstance) -> Tuple[float, fl
                     equip_ok = False
                     break
             if not equip_ok:
+                continue
+
+            # C3: Precedence constraints
+            prec_ok = True
+            for (pre, post) in inst.precedence:
+                if post == scene and pre in schedule:
+                    if d <= schedule[pre]["day"]:
+                        prec_ok = False
+                        break
+                if pre == scene and post in schedule:
+                    if schedule[post]["day"] <= d:
+                        prec_ok = False
+                        break
+            if not prec_ok:
+                continue
+
+            # C16: Co-scheduling constraints (group members must share a day)
+            cosched_ok = True
+            for group in getattr(inst, 'coschedule_groups', []):
+                if scene in group:
+                    for gs in group:
+                        if gs != scene and gs in schedule:
+                            if schedule[gs]["day"] != d:
+                                cosched_ok = False
+                                break
+                if not cosched_ok:
+                    break
+            if not cosched_ok:
                 continue
 
             # C17: Check minimum scene separation
@@ -156,6 +196,9 @@ def evaluate_permutation(perm: List[int], inst: MSSPInstance) -> Tuple[float, fl
                 if day_loc_count.get((loc, d), 0) >= cap:
                     continue
                 town = _get_town(loc)
+                # C16 co-scheduling town compatibility
+                if cosched_allowed_towns is not None and town not in cosched_allowed_towns:
+                    continue
                 # C11: town uniqueness per day
                 if d in day_town and day_town[d] is not None and day_town[d] != town:
                     continue
@@ -169,15 +212,10 @@ def evaluate_permutation(perm: List[int], inst: MSSPInstance) -> Tuple[float, fl
                     min_tc = tc
                     chosen_loc = loc
 
-            if chosen_loc is None and locs:
-                # Relax location constraints as last resort
-                for loc in locs:
-                    if d not in inst.location_availability.get(loc, inst.days):
-                        continue
-                    chosen_loc = loc
-                    break
-                if chosen_loc is None:
-                    chosen_loc = locs[0]
+            if chosen_loc is None:
+                # No location satisfies town/concurrency constraints on this day
+                # — skip to next day rather than violating C11/C18
+                continue
 
             schedule[scene] = {
                 "day": d,
@@ -207,7 +245,7 @@ def evaluate_permutation(perm: List[int], inst: MSSPInstance) -> Tuple[float, fl
                     actor_days[a].add(d)
                     total_cost += inst.actor_wage.get(a, 0)
 
-            if last_loc and chosen_loc:
+            if last_loc and chosen_loc and last_loc != chosen_loc:
                 total_cost += inst.transfer_cost.get((last_loc, chosen_loc), 0)
 
             # Deadline penalty
@@ -230,13 +268,57 @@ def evaluate_permutation(perm: List[int], inst: MSSPInstance) -> Tuple[float, fl
             break
 
         if not placed:
-            # Force-place
+            # Force-place: update state trackers to maintain consistency
+            # If scene is in a co-scheduling group, force-place on the same day
+            # as any already-scheduled group member (preserves C16 intent).
+            # Otherwise, pick the lightest day to minimise C5 violations.
+            forced_by_group = False
             d = inst.num_days
+            for group in getattr(inst, 'coschedule_groups', []):
+                if scene in group:
+                    for gs in group:
+                        if gs != scene and gs in schedule:
+                            d = schedule[gs]["day"]
+                            forced_by_group = True
+                            break
+                    break
+            if not forced_by_group:
+                def _fp_day_key(day):
+                    town_set = day_town.get(day)
+                    if cosched_allowed_towns is not None:
+                        town_ok = (town_set is None or town_set in cosched_allowed_towns)
+                    else:
+                        town_ok = (town_set is None or
+                                   any(_get_town(lc) == town_set for lc in locs))
+                    return (0 if town_ok else 1, day_hours.get(day, 0))
+                d = min(range(1, inst.num_days + 1), key=_fp_day_key)
             loc = locs[0] if locs else None
+            # Prefer a location from co-scheduling-compatible towns first
+            if loc and cosched_allowed_towns:
+                for candidate in locs:
+                    if _get_town(candidate) in cosched_allowed_towns:
+                        loc = candidate
+                        break
+            # Then override with day's established town (C11)
+            if loc and d in day_town and day_town[d] is not None:
+                for candidate in locs:
+                    if _get_town(candidate) == day_town[d]:
+                        loc = candidate
+                        break
             schedule[scene] = {
                 "day": d, "location": loc,
                 "actors": actors, "duration": dur
             }
+            day_hours[d] = day_hours.get(d, 0) + dur
+            for a in actors:
+                actor_days.setdefault(a, set()).add(d)
+            if loc:
+                town = _get_town(loc)
+                if town is not None and d not in day_town:
+                    day_town[d] = town
+                day_loc_count[(loc, d)] = day_loc_count.get((loc, d), 0) + 1
+            for e in getattr(inst, 'scene_equipment', {}).get(scene, []):
+                day_equip_count[(e, d)] = day_equip_count.get((e, d), 0) + 1
             total_cost += 10000  # Large penalty for infeasible
 
     # C15: Add holding fees for booked actors idle on booking window days
@@ -266,7 +348,7 @@ def evaluate_permutation(perm: List[int], inst: MSSPInstance) -> Tuple[float, fl
 class StandaloneGA:
     """Standard GA for MSSP (single-objective: minimize cost)."""
 
-    def __init__(self, population_size: int = 100, generations: int = 200,
+    def __init__(self, population_size: int = 50, generations: int = 100,
                  crossover_rate: float = 0.85, mutation_rate: float = 0.15,
                  elite_size: int = 5, seed: int = 42):
         self.pop_size = population_size
@@ -370,7 +452,7 @@ class StandaloneGA:
 class StandalonePSO:
     """Discrete PSO for MSSP (following Tekin 2023 approach)."""
 
-    def __init__(self, swarm_size: int = 50, iterations: int = 200,
+    def __init__(self, swarm_size: int = 30, iterations: int = 100,
                  w: float = 0.7, c1: float = 1.5, c2: float = 1.5,
                  seed: int = 42):
         self.swarm_size = swarm_size

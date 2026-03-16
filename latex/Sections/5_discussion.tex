@@ -3,7 +3,7 @@
 
 \subsection{Impact of the Enhanced Formulation}
 
-Our 13-constraint formulation with the three-tier location hierarchy (city--town--location) substantially changes the optimization landscape compared to the flat location models used in prior work~\citep{liu2019, tekin2023}.
+Our 19-constraint formulation with the three-tier location hierarchy (city--town--location) substantially changes the optimization landscape compared to the flat location models used in prior work~\citep{liu2019, tekin2023}.
 The geographic logistics constraints---town uniqueness (\ref{c11}) and town continuity (\ref{c12})---create hard coupling between consecutive shooting days, as the crew cannot operate in multiple towns simultaneously or switch towns overnight.
 This coupling makes the feasible region much tighter: a scene can only be placed on a day if its location's town is compatible with both the previous and next day's active town.
 
@@ -16,7 +16,7 @@ The SIG naturally groups scenes sharing both actors \emph{and} locations in the 
 \subsection{The Scalability Crossover}
 
 Our experiments reveal a striking \emph{scalability crossover}: BDM-AOS underperforms scene-level metaheuristics on instances with $\leq 50$ scenes but \textbf{dominates} at 75 and 100 scenes, achieving 20.7\% and 14.5\% lower cost than GA, respectively.
-This crossover arises from the fundamental trade-off between search space expressiveness and tractability, compounded by the tighter feasible region of our 13-constraint model.
+This crossover arises from the fundamental trade-off between search space expressiveness and tractability, compounded by the tighter feasible region of our 19-constraint model.
 
 On small-to-medium instances (S20--S30), Louvain community detection produces $K{=}6{-}8$ blocks.
 While the resulting $K!$ space is exponentially smaller than $n!$, it is also \emph{too coarse}: each block permutation fixes the relative ordering of 3--6 scenes, eliminating fine-grained rearrangements that GA/PSO can exploit.
@@ -82,7 +82,7 @@ Our results are broadly consistent with the MSSP literature:
 \begin{itemize}
     \item \citet{bomsdorf2008} solved instances up to 60 scenes using a branch-and-bound approach. Our MILP baseline also becomes intractable beyond 15 scenes, consistent with the NP-hardness established by \citet{garey1979}. The additional binary variables from the linking constraints (\ref{c8}--\ref{c9}) and town activation variables $u_{i,d}$ increase the model size by a factor of $O(m + k + q)$, tightening the intractability boundary further.
     \item \citet{nordstrom2022} reported heuristic-MILP gaps of 7--12\% on medium instances. BDM-AOS's gap of 5.6\% from GA/PSO on S50 falls in a similar range.
-    \item \citet{liu2019} used 24 constraints and \citet{tekin2023} used 31 constraints, but both employ flat location models without geographic hierarchy. Our 13 constraint families are \emph{structurally richer} due to the three-tier hierarchy, linking variables, and geographic logistics constraints, capturing operational realities (crew logistics, labor regulations) that prior formulations omit.
+    \item \citet{liu2019} used 24 constraints and \citet{tekin2023} used 31 constraints, but both employ flat location models without geographic hierarchy. Our 19 constraint families are \emph{structurally richer} due to the three-tier hierarchy, linking variables, geographic logistics constraints, equipment sharing, booking fees, co-scheduling, and scene separation---capturing operational realities that prior formulations omit.
     \item The \emph{crossover phenomenon}---where decomposition methods surpass flat search at sufficient scale---parallels findings in vehicle routing~\citep{rahimian2017} and large-scale scheduling~\citep{maniezzo2010}, where decomposition-based matheuristics consistently outperform standalone metaheuristics on large instances.
 \end{itemize}
 
@@ -90,7 +90,7 @@ Our results are broadly consistent with the MSSP literature:
 
 We acknowledge several limitations:
 \begin{enumerate}
-    \item \textbf{Synthetic data}: All instances are generated synthetically. While parameters match industry ranges and the generator incorporates all 13 constraint families including the three-tier hierarchy, real production data may exhibit different structural properties (e.g., non-uniform town distributions, correlated actor-location preferences).
+    \item \textbf{Synthetic data}: All instances are generated synthetically. While parameters match industry ranges and the generator incorporates all 19 constraint families including the three-tier hierarchy, real production data may exhibit different structural properties (e.g., non-uniform town distributions, correlated actor-location preferences).
     \item \textbf{Fixed hyperparameters}: BDM-AOS uses fixed population (20) and generations (40) across all instances. Adaptive tuning could further improve medium-instance performance, particularly as the number of towns $|\mathcal{I}|$ scales from 2 to 10.
     \item \textbf{Greedy decoder}: The current decoder produces fixed makespan, collapsing the Pareto front. Alternative decoders that explicitly trade off town-switching costs (requiring travel days) against makespan compression could reveal genuine multi-objective trade-offs.
     \item \textbf{Single-instance testing}: Each configuration uses one instance (seed~42). Testing on multiple instance variants per size would strengthen generalizability claims, especially for varying town-to-location ratios and actor labor limit distributions.
@@ -101,4 +101,4 @@ We acknowledge several limitations:
 BDM-AOS is not a universally superior algorithm---it underperforms GA/PSO on instances with $\leq 30$ scenes.
 Its value lies in \emph{scalability}: by exploiting the natural community structure of film scheduling via SIG decomposition, it achieves both better solution quality and faster runtime on large instances where scene-level metaheuristics struggle.
 The 20.7\% improvement over GA at 75 scenes and 14.5\% at 100 scenes, combined with a $5.5\times$ runtime speedup, demonstrates that decomposition-guided search is the appropriate paradigm for production-scale MSSP instances.
-The comprehensive 13-constraint formulation with hierarchical location modeling ensures that these improvements are achieved on a realistic and operationally meaningful problem representation.
+The comprehensive 19-constraint formulation with hierarchical location modeling ensures that these improvements are achieved on a realistic and operationally meaningful problem representation.

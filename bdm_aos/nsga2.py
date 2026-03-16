@@ -174,7 +174,7 @@ def compute_hypervolume(population: List[Solution],
     for sol in population:
         if sol.objectives is None:
             continue
-        if sol.objectives[0] <= ref_point[0] and sol.objectives[1] <= ref_point[1]:
+        if sol.objectives[0] < ref_point[0] and sol.objectives[1] < ref_point[1]:
             is_dominated = False
             for other in population:
                 if other.objectives is None:
@@ -193,9 +193,11 @@ def compute_hypervolume(population: List[Solution],
 
     hv = 0.0
     prev_y = ref_point[1]
-    for sol in non_dom:
+    for k, sol in enumerate(non_dom):
         if sol.objectives[1] < prev_y:
-            width = ref_point[0] - sol.objectives[0]
+            # Width: from current x to next point's x (or ref_point[0] for last)
+            next_x = non_dom[k + 1].objectives[0] if k + 1 < len(non_dom) else ref_point[0]
+            width = next_x - sol.objectives[0]
             height = prev_y - sol.objectives[1]
             hv += width * height
             prev_y = sol.objectives[1]

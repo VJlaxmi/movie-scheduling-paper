@@ -540,11 +540,26 @@ class MILPSubProblemSolver:
                 check_d += 1
             return consec <= max_consec
 
+        # Track most recently placed location (within this block) for transfer scoring
+        current_last_loc = last_location
+
         for s in sorted_scenes:
             dur = inst.scene_duration.get(s, 2.0)
             scene_actors = inst.scene_actors.get(s, [])
             locs = inst.scene_locations.get(s, [])
             placed = False
+
+            # C16 co-scheduling: towns shared by ALL group members (computed once per scene)
+            _cosched_allowed_s = None
+            for _grp in getattr(inst, 'coschedule_groups', []):
+                if s in _grp:
+                    _towns = None
+                    for _gs in _grp:
+                        _gs_towns = {_get_town_for_loc(_l)
+                                     for _l in inst.scene_locations.get(_gs, [])}
+                        _towns = _gs_towns if _towns is None else _towns & _gs_towns
+                    _cosched_allowed_s = _towns if _towns else None
+                    break
 
             # Score each day
             best_day = None
@@ -587,6 +602,34 @@ class MILPSubProblemSolver:
                 if not equip_ok:
                     continue
 
+                # C3: Precedence constraints
+                prec_ok = True
+                for (pre, post) in inst.precedence:
+                    if post == s and pre in schedule:
+                        if d <= schedule[pre]["day"]:
+                            prec_ok = False
+                            break
+                    if pre == s and post in schedule:
+                        if schedule[post]["day"] <= d:
+                            prec_ok = False
+                            break
+                if not prec_ok:
+                    continue
+
+                # C16: co-scheduling constraints
+                cosched_ok = True
+                for group in getattr(inst, 'coschedule_groups', []):
+                    if s in group:
+                        for gs in group:
+                            if gs != s and gs in schedule:
+                                if schedule[gs]["day"] != d:
+                                    cosched_ok = False
+                                    break
+                    if not cosched_ok:
+                        break
+                if not cosched_ok:
+                    continue
+
                 # C17: Check minimum scene separation
                 sep_ok = True
                 for (s_i, s_j), delta in getattr(inst, 'scene_separation', {}).items():
@@ -604,6 +647,7 @@ class MILPSubProblemSolver:
                 # Choose best location on this day (respecting town constraints)
                 chosen_loc = None
                 min_tc = float('inf')
+
                 for loc in locs:
                     if d not in inst.location_availability.get(loc, inst.days):
                         continue
@@ -612,6 +656,9 @@ class MILPSubProblemSolver:
                     if day_loc_count.get((loc, d), 0) >= cap:
                         continue
                     town = _get_town_for_loc(loc)
+                    # C16 co-scheduling town compatibility
+                    if _cosched_allowed_s is not None and town not in _cosched_allowed_s:
+                        continue
                     # C11: town uniqueness - check if another town is already active
                     if d in day_town and day_town[d] is not None and day_town[d] != town:
                         continue
@@ -619,26 +666,17 @@ class MILPSubProblemSolver:
                     if not _check_town_continuity(d, town):
                         continue
                     tc = 0
-                    if last_location:
+                    if current_last_loc:
                         tc = inst.transfer_cost.get(
-                            (last_location, loc), 0)
+                            (current_last_loc, loc), 0)
                     if tc < min_tc:
                         min_tc = tc
                         chosen_loc = loc
 
                 if chosen_loc is None:
-                    # Relax town constraints if no location found
-                    for loc in locs:
-                        if d in inst.location_availability.get(loc, inst.days):
-                            # Still check location capacity (C18)
-                            cap = getattr(inst, 'location_capacity', {}).get(loc, 999)
-                            if day_loc_count.get((loc, d), 0) < cap:
-                                chosen_loc = loc
-                                min_tc = 0
-                                break
-                    if chosen_loc is None:
-                        chosen_loc = locs[0] if locs else None
-                        min_tc = 0
+                    # No location satisfies town/concurrency constraints on this day
+                    # — skip this day to avoid C11 violations
+                    continue
 
                 # Score = wage cost + transfer cost + criticality
                 wage_cost = 0
@@ -686,16 +724,51 @@ class MILPSubProblemSolver:
                         day_town[best_day] = town
                     # Track location concurrency (C18)
                     day_loc_count[(best_loc, best_day)] = day_loc_count.get((best_loc, best_day), 0) + 1
+                    # Update running last location for transfer cost scoring
+                    current_last_loc = best_loc
                 # Track equipment usage (C14)
                 for e in getattr(inst, 'scene_equipment', {}).get(s, []):
                     day_equip_count[(e, best_day)] = day_equip_count.get((e, best_day), 0) + 1
                 placed = True
 
             if not placed:
-                # Force-place: find any day with least usage
-                for d in sorted(available_days,
-                                key=lambda d: day_hours.get(d, 0)):
+                # Co-scheduling group: force-place on same day as already-scheduled
+                # group member to preserve C16 intent
+                force_day = None
+                for group in getattr(inst, 'coschedule_groups', []):
+                    if s in group:
+                        for gs in group:
+                            if gs != s and gs in schedule:
+                                force_day = schedule[gs]["day"]
+                                break
+                        break
+                # Pick the lightest available day that is town-compatible, or group day if available
+                def _fp_day_sort(d):
+                    town_set = day_town.get(d)
+                    if _cosched_allowed_s is not None:
+                        town_ok = (town_set is None or town_set in _cosched_allowed_s)
+                    else:
+                        town_ok = (town_set is None or
+                                   any(_get_town_for_loc(lc) == town_set for lc in locs))
+                    return (0 if town_ok else 1, day_hours.get(d, 0))
+                candidate_days = ([force_day] if force_day else []) + sorted(
+                    available_days, key=_fp_day_sort)
+                for d in candidate_days:
+                    if d not in available_days:
+                        continue
                     loc = locs[0] if locs else None
+                    # Prefer a location from co-scheduling-compatible towns first
+                    if loc and _cosched_allowed_s:
+                        for candidate in locs:
+                            if _get_town_for_loc(candidate) in _cosched_allowed_s:
+                                loc = candidate
+                                break
+                    # Then override with day's established town (C11)
+                    if loc and d in day_town and day_town[d] is not None:
+                        for candidate in locs:
+                            if _get_town_for_loc(candidate) == day_town[d]:
+                                loc = candidate
+                                break
                     schedule[s] = {
                         "day": d,
                         "location": loc,
@@ -705,6 +778,14 @@ class MILPSubProblemSolver:
                     day_hours[d] = day_hours.get(d, 0) + dur
                     for a in scene_actors:
                         actor_days.setdefault(a, set()).add(d)
+                    if loc:
+                        town = _get_town_for_loc(loc)
+                        if town is not None and d not in day_town:
+                            day_town[d] = town
+                        day_loc_count[(loc, d)] = day_loc_count.get((loc, d), 0) + 1
+                        current_last_loc = loc
+                    for e in getattr(inst, 'scene_equipment', {}).get(s, []):
+                        day_equip_count[(e, d)] = day_equip_count.get((e, d), 0) + 1
                     break
 
         # Compute cost accurately
@@ -739,10 +820,26 @@ class MILPSubProblemSolver:
                 if d > dl:
                     total_cost += inst.deadline_penalty.get(s, 100) * (d - dl)
 
+            # Criticality-weighted utilization (objective term iv)
+            if loc:
+                kl = inst.location_criticality.get(loc, 1.0)
+                if kl > 0:
+                    total_cost += 1.0 / kl
+            for a in info["actors"]:
+                ka = inst.actor_criticality.get(a, 1.0)
+                if ka > 0:
+                    total_cost += 1.0 / ka
+
         # C15: Holding fees for booked actors not shooting on booking window days
+        # Only charge actors who appear in this block's scenes
+        block_actors_set = set()
+        for s_info in schedule.values():
+            block_actors_set.update(s_info.get("actors", []))
         booking_windows = getattr(inst, 'actor_booking_window', {})
         holding_fees = getattr(inst, 'actor_holding_fee', {})
         for a, (bw_start, bw_end) in booking_windows.items():
+            if a not in block_actors_set:
+                continue
             h_a = holding_fees.get(a, 0.0)
             if h_a > 0:
                 actor_shooting_days = set()

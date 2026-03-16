@@ -222,7 +222,9 @@ class ScaledDataGenerator:
             raise ValueError(f"Unknown config: {config_name}")
 
         ns, na, nl, nd = self.CONFIGS[config_name]
-        seed = self.base_seed + variant * 1000 + hash(config_name) % 100
+        # Use sum of ASCII values for deterministic hash (avoids Python hash randomization)
+        _cfg_hash = sum(ord(c) for c in config_name) % 100
+        seed = self.base_seed + variant * 1000 + _cfg_hash
         rng = random.Random(seed)
         np_rng = np.random.RandomState(seed)
 
@@ -383,15 +385,41 @@ class ScaledDataGenerator:
 
         # --- C16: Mandatory co-scheduling groups ---
         # ~10-15% of scenes grouped in pairs/triples of 2-3
+        # Groups must share at least one common town to be C11-feasible.
         num_groups = max(1, ns // 8)
         ungrouped_scenes = list(inst.scenes)
         rng.shuffle(ungrouped_scenes)
+
+        def _scene_towns(s):
+            return {inst.location_town.get(l)
+                    for l in inst.scene_locations.get(s, [])
+                    if l in inst.location_town}
+
         for _ in range(num_groups):
             group_size = rng.randint(2, min(3, len(ungrouped_scenes)))
             if len(ungrouped_scenes) < group_size:
                 break
             group = ungrouped_scenes[:group_size]
-            ungrouped_scenes = ungrouped_scenes[group_size:]
+            # Verify the group shares at least one common town (C11 feasibility)
+            shared_towns = _scene_towns(group[0])
+            for gs in group[1:]:
+                shared_towns &= _scene_towns(gs)
+            if not shared_towns:
+                # No common town — shrink to a pair that does share a town
+                valid_group = [group[0]]
+                t0 = _scene_towns(group[0])
+                for gs in group[1:]:
+                    if t0 & _scene_towns(gs):
+                        valid_group.append(gs)
+                        t0 &= _scene_towns(gs)
+                        if len(valid_group) >= 2:
+                            break
+                if len(valid_group) < 2:
+                    # Cannot form any valid pair; consume scenes but skip this group
+                    ungrouped_scenes = ungrouped_scenes[group_size:]
+                    continue
+                group = valid_group
+            ungrouped_scenes = [s for s in ungrouped_scenes if s not in group]
             inst.coschedule_groups.append(group)
 
         # --- C17: Minimum scene separation (10% of scene pairs) ---

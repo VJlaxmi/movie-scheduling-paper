@@ -55,8 +55,25 @@ class SceneInteractionGraph:
         G = nx.Graph()
         G.add_nodes_from(inst.scenes)
 
+        # Build co-scheduling group membership lookup for O(1) checks
+        cosched_pairs: set = set()
+        for group in getattr(inst, 'coschedule_groups', []):
+            for i in range(len(group)):
+                for j in range(i + 1, len(group)):
+                    cosched_pairs.add((min(group[i], group[j]),
+                                       max(group[i], group[j])))
+
         for i, s1 in enumerate(inst.scenes):
             for s2 in inst.scenes[i + 1:]:
+                # C16: co-scheduling groups get weight=1 (max) to force same block
+                pair = (min(s1, s2), max(s1, s2))
+                if pair in cosched_pairs:
+                    G.add_edge(s1, s2, weight=1.0,
+                               actor_coupling=1.0,
+                               location_coupling=1.0,
+                               transfer_proximity=1.0)
+                    continue
+
                 actors1 = set(inst.scene_actors.get(s1, []))
                 actors2 = set(inst.scene_actors.get(s2, []))
                 locs1 = set(inst.scene_locations.get(s1, []))

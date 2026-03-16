@@ -5,12 +5,12 @@ We presented BDM-AOS, a bi-level decomposition matheuristic with adaptive operat
 Our work makes four primary contributions:
 
 \begin{enumerate}
-    \item A \emph{comprehensive MILP formulation} with 13 constraint families over a three-tier geographic hierarchy (city--town--location), actor--scene--day and location--scene--day linking variables, town-uniqueness and town-continuity logistics constraints, criticality-weighted utilization, and actor consecutive working-day limits---substantially extending prior formulations.
+    \item A \emph{comprehensive MILP formulation} with 19 constraint families over a three-tier geographic hierarchy (city--town--location), actor--scene--day and location--scene--day linking variables, town-uniqueness and town-continuity logistics constraints, equipment sharing, booking/holding fees, co-scheduling, scene separation, location concurrency, lead-actor rest periods, criticality-weighted utilization, and actor consecutive working-day limits---substantially extending prior formulations.
 
     \item The \emph{Scene Interaction Graph} decomposes scenes into shooting blocks based on actor-sharing, location-sharing, and transfer cost structure, reducing the search space from $n!$ to $K!$ permutations.
     For our largest instance (100 scenes, 24 blocks), this reduction exceeds $10^{134}\times$.
 
-    \item The \emph{bi-level framework} combines NSGA-II over block permutations with a global greedy decoder that enforces all 13 constraint families. The decomposition guides scene ordering while cross-block day sharing preserves cost-competitiveness. This is the first decomposition-based approach for the MSSP.
+    \item The \emph{bi-level framework} combines NSGA-II over block permutations with a global greedy decoder that enforces all 19 constraint families. The decomposition guides scene ordering while cross-block day sharing preserves cost-competitiveness. This is the first decomposition-based approach for the MSSP.
 
     \item \emph{Q-learning adaptive operator selection} with two novel problem-specific operators---Location-Aware Crossover (LAX) and Actor-Continuity Mutation (ACM)---adapts the search strategy based on population diversity, convergence rate, and search progress.
 \end{enumerate}

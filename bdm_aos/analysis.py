@@ -83,7 +83,7 @@ class ResultAnalyzer:
                         costs_a1, costs_a2, alternative='two-sided'
                     )
                     n1, n2 = len(costs_a1), len(costs_a2)
-                    effect_size = 1 - 2 * stat / (n1 * n2)
+                    effect_size = 2 * stat / (n1 * n2) - 1
 
                     results.append({
                         "config": config,
@@ -168,15 +168,14 @@ class ResultAnalyzer:
         if not front:
             return 0.0
         pts = sorted(set(front), key=lambda p: p[0])
-        # Filter dominated
+        # Build non-dominated front: sorted by x ascending requires strictly
+        # decreasing y. A point is dominated if the last nd point has y <= p[1].
         nd = []
         for p in pts:
             if p[0] < ref[0] and p[1] < ref[1]:
-                while nd and nd[-1][1] >= p[1]:
-                    nd.pop()
-                nd.append(p)
+                if not nd or nd[-1][1] > p[1]:
+                    nd.append(p)
         hv = 0.0
-        prev_x = 0.0
         for i, (cx, cy) in enumerate(nd):
             next_x = nd[i + 1][0] if i + 1 < len(nd) else ref[0]
             hv += (next_x - cx) * (ref[1] - cy)

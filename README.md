@@ -40,7 +40,7 @@ Film production scheduling involves sequencing scenes across shooting days to mi
 │   ├── main.bib
 │   ├── neurips_2025.sty
 │   ├── Sections/           # Paper sections (0–7)
-│   └── figures/            # Generated figures (PDF + PNG)
+│   └── figures/            # Generated figures (PDF)
 └── requirements.txt
 ```
 

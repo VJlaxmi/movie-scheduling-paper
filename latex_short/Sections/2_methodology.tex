@@ -16,11 +16,15 @@ Seven binary variable families: $x_{s,d}$ (scene--day), $y_{s,l}$ (scene--locati
 \paragraph{Bi-objective formulation.}
 We minimize cost $f_1$ and makespan $f_2$ simultaneously:
 \begin{align}
-f_1 &= \textstyle\sum_a w_a |\{d : \sum_s v_{a,s,d} \geq 1\}| + \sum_{d,l \neq l'} c_{l,l'} \sigma_{l,l',d} + \sum_s \rho_s \max(0, \text{day}(s) - \bar{d}_s) + \sum_{l,s,d} \tfrac{z_{l,s,d}}{\kappa^L_l} + \sum_{a,s,d} \tfrac{v_{a,s,d}}{\kappa^A_a} + \sum_a h_a \textstyle\sum_d \phi_{a,d} \label{eq:cost}\\
-f_2 &= \max_s \textstyle\sum_d d \cdot x_{s,d} - \min_s \textstyle\sum_d d \cdot x_{s,d} + 1 \label{eq:makespan}
+f_1 &= \underbrace{\textstyle\sum_a w_a \bigl|\{d:\sum_s v_{a,s,d}\!\geq\!1\}\bigr|}_{\text{wages}}
+     + \underbrace{\textstyle\sum_{d}\sum_{l\neq l'} c_{l,l'}\,\sigma_{l,l',d}}_{\text{transfers}}
+     + \underbrace{\textstyle\sum_s \rho_s(\text{day}(s)-\bar{d}_s)^+}_{\text{penalties}} \nonumber\\
+    &\quad + \underbrace{\textstyle\sum_{l,s,d} \tfrac{z_{l,s,d}}{\kappa^L_l} + \sum_{a,s,d} \tfrac{v_{a,s,d}}{\kappa^A_a}}_{\text{utilization}}
+     + \underbrace{\textstyle\sum_a h_a \sum_d \phi_{a,d}}_{\text{holding fees}} \label{eq:cost}\\[2pt]
+f_2 &= \max_s \textstyle\sum_d d\cdot x_{s,d} - \min_s \textstyle\sum_d d\cdot x_{s,d} + 1 \label{eq:makespan}
 \end{align}
-$f_1$ sums: actor wages, hierarchical transfer costs $c_{l,l'}$ (intra-town / inter-town / inter-city by tier), deadline penalties, criticality-weighted utilization, and actor holding fees.
-$f_2$ is production makespan.
+where $c_{l,l'}$ captures three-tier hierarchical transfer costs (intra-town / inter-town / inter-city), and $({\cdot})^+ = \max(0,{\cdot})$.
+$f_2$ is the total production makespan (last day $-$ first day $+1$).
 
 \paragraph{19 constraint families.}
 \textbf{C1--C4}~assignment (scene scheduled once, one location, precedence, time windows);

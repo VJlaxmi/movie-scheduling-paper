@@ -1,25 +1,38 @@
 \documentclass{article}
 
-% NeurIPS style (preprint mode)
+% NeurIPS 2025 style (preprint/submission mode)
 \usepackage[preprint]{neurips_2025}
 
+% Encoding
 \usepackage[utf8]{inputenc}
 \usepackage[T1]{fontenc}
-\usepackage{url}
-\usepackage{booktabs}
-\usepackage{amsfonts}
+
+% Math
 \usepackage{amsmath}
 \usepackage{amssymb}
-\usepackage{xcolor}
+\usepackage{amsfonts}
+
+% Figures and tables
 \usepackage{graphicx}
+\usepackage{booktabs}
+\usepackage{multirow}
+
+% Algorithms  (algorithm float + algorithmic body)
 \usepackage{algorithm}
 \usepackage{algorithmic}
-\usepackage{multirow}
+
+% Typography (reduces overfull hboxes, better line breaking)
+\usepackage{microtype}
+
+% Misc
+\usepackage{xcolor}
+\usepackage{url}
+
+% hyperref must be loaded LAST
 \usepackage{hyperref}
 
-% Figures are in latex_short/figures/
-
-\title{A Bi-Level Decomposition Matheuristic with Adaptive Operator Selection\\for the Multi-Objective Movie Scene Scheduling Problem}
+\title{A Bi-Level Decomposition Matheuristic with Adaptive Operator Selection\\
+       for the Multi-Objective Movie Scene Scheduling Problem}
 
 \author{%
   Vijaylaxmi Lendale \\

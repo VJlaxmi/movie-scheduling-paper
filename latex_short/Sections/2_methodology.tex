@@ -6,70 +6,88 @@
 
 \paragraph{Sets and parameters.}
 Let $\mathcal{S}$, $\mathcal{A}$, $\mathcal{D}$, $\mathcal{C}$, $\mathcal{I}$, $\mathcal{L}$, $\mathcal{E}$, $\mathcal{G}$ denote scenes, actors, days, cities, towns, locations, equipment types, and mandatory co-scheduling groups.
-Mappings $\phi: \mathcal{L} \to \mathcal{I}$ and $\psi: \mathcal{I} \to \mathcal{C}$ encode the geographic hierarchy.
-Each scene $s$ has duration $\delta_s$, required actors $A(s)$, compatible locations $L(s)$, and optional time window and deadline penalty.
-Each actor $a$ has wage $w_a$, availability calendar, consecutive-day limit $\bar{h}_a$, booking window, and holding fee $h_a$.
+Surjective mappings $\phi: \mathcal{L} \to \mathcal{I}$ and $\psi: \mathcal{I} \to \mathcal{C}$ encode the three-tier geographic hierarchy.
+Each scene $s \in \mathcal{S}$ has shooting duration $\delta_s$, required actors $A(s) \subseteq \mathcal{A}$, compatible locations $L(s) \subseteq \mathcal{L}$, and an optional time window with deadline penalty.
+Each actor $a \in \mathcal{A}$ has daily wage $w_a$, availability calendar $\mathcal{D}_a$, consecutive-day limit $\bar{h}_a$, booking window $[\beta^s_a, \beta^e_a]$, and holding fee $h_a$.
 
 \paragraph{Decision variables.}
-Seven binary variable families: $x_{s,d}$ (scene--day), $y_{s,l}$ (scene--location), $v_{a,s,d}$ (actor participation), $z_{l,s,d}$ (location--scene--day), $u_{i,d}$ (active town), $\phi_{a,d}$ (idle booked day), $w_{a,d}$ (working-day indicator).
+Seven binary families: $x_{s,d}$ (scene--day assignment), $y_{s,l}$ (scene--location assignment), $v_{a,s,d}$ (actor participation), $z_{l,s,d}$ (location--scene--day), $u_{i,d}$ (active town per day), $\phi_{a,d}$ (actor idle on booked day), $w_{a,d}$ (actor working-day indicator).
 
 \paragraph{Bi-objective formulation.}
-We minimize cost $f_1$ and makespan $f_2$ simultaneously:
+We simultaneously minimise cost $f_1$ and makespan $f_2$:
 \begin{align}
-f_1 &= \underbrace{\textstyle\sum_a w_a \bigl|\{d:\sum_s v_{a,s,d}\!\geq\!1\}\bigr|}_{\text{wages}}
-     + \underbrace{\textstyle\sum_{d}\sum_{l\neq l'} c_{l,l'}\,\sigma_{l,l',d}}_{\text{transfers}}
-     + \underbrace{\textstyle\sum_s \rho_s(\text{day}(s)-\bar{d}_s)^+}_{\text{penalties}} \nonumber\\
-    &\quad + \underbrace{\textstyle\sum_{l,s,d} \tfrac{z_{l,s,d}}{\kappa^L_l} + \sum_{a,s,d} \tfrac{v_{a,s,d}}{\kappa^A_a}}_{\text{utilization}}
-     + \underbrace{\textstyle\sum_a h_a \sum_d \phi_{a,d}}_{\text{holding fees}} \label{eq:cost}\\[2pt]
-f_2 &= \max_s \textstyle\sum_d d\cdot x_{s,d} - \min_s \textstyle\sum_d d\cdot x_{s,d} + 1 \label{eq:makespan}
+f_1 &= \underbrace{\sum_{a} w_a \bigl|\{d : \sum\nolimits_{s} v_{a,s,d} \geq 1\}\bigr|}_{\text{actor wages}}
+     + \underbrace{\sum_{d}\;\sum_{l \neq l'} c_{l,l'}\,\sigma_{l,l',d}}_{\text{hierarchical transfers}}
+     + \underbrace{\sum_{s} \rho_s\,(\mathrm{day}(s) - \bar{d}_s)^{+}}_{\text{deadline penalties}}
+     \nonumber \\
+    &\quad
+     + \underbrace{\sum_{l,s,d} \frac{z_{l,s,d}}{\kappa^{L}_{l}}
+                 + \sum_{a,s,d} \frac{v_{a,s,d}}{\kappa^{A}_{a}}}_{\text{criticality-weighted utilisation}}
+     + \underbrace{\sum_{a} h_a \sum_{d} \phi_{a,d}}_{\text{holding fees}}
+     \label{eq:cost}\\[4pt]
+f_2 &= \max_{s} \sum_{d} d \cdot x_{s,d}
+     - \min_{s} \sum_{d} d \cdot x_{s,d} + 1
+     \label{eq:makespan}
 \end{align}
-where $c_{l,l'}$ captures three-tier hierarchical transfer costs (intra-town / inter-town / inter-city), and $({\cdot})^+ = \max(0,{\cdot})$.
-$f_2$ is the total production makespan (last day $-$ first day $+1$).
+where $c_{l,l'}$ is the composite transfer cost between locations (intra-town / inter-town / inter-city by geographic tier), $\sigma_{l,l',d}$ indicates a location change on day $d$, and $(\cdot)^{+} = \max(0,\cdot)$.
 
-\paragraph{19 constraint families.}
-\textbf{C1--C4}~assignment (scene scheduled once, one location, precedence, time windows);
-\textbf{C5--C7}~capacity and availability (daily hour cap, actor/location calendars);
-\textbf{C8--C9}~variable linking ($v_{a,s,d}$, $z_{l,s,d}$, $w_{a,d}$);
-\textbf{C10--C13}~geographic logistics (location--town consistency; at most one active town/day; no overnight town switches; rolling labor limits);
-\textbf{C14}~equipment supply per day;
-\textbf{C15}~actor booking/holding fees;
-\textbf{C16--C17}~mandatory co-scheduling groups and minimum scene separation;
-\textbf{C18--C19}~location concurrency and lead-actor rest periods.
+\paragraph{19 constraint families (C1--C19).}
+\textbf{C1--C4}~\emph{Assignment}: each scene scheduled exactly once, at exactly one location, respecting precedence and time windows.
+\textbf{C5--C7}~\emph{Capacity and availability}: daily shooting-hour cap; actor and location availability calendars.
+\textbf{C8--C9}~\emph{Variable linking}: $v_{a,s,d}$ and $z_{l,s,d}$ couple scene scheduling to actor/location use; $w_{a,d}$ gives a scene-agnostic working-day indicator.
+\textbf{C10--C13}~\emph{Geographic logistics}: location--town consistency; at most one active town per day (C11); no overnight town switches (C12); rolling consecutive-day labour limits (C13).
+\textbf{C14}~\emph{Equipment sharing}: specialised equipment supply not exceeded per day.
+\textbf{C15}~\emph{Booking and holding fees}: $\phi_{a,d}=1$ when actor is under contract but not shooting.
+\textbf{C16--C17}~\emph{Scene coordination}: mandatory co-scheduling groups; minimum inter-scene separation.
+\textbf{C18--C19}~\emph{Concurrency and rest}: location concurrency limits; mandatory rest windows for lead actors.
 
 \subsection{Scene Interaction Graph (SIG)}
+\label{sec:sig}
 
-We define an undirected weighted graph $G = (\mathcal{S}, E, w)$:
+We build an undirected weighted graph on $\mathcal{S}$ with edge weights:
 \begin{equation}
-w(s_i, s_j) = \alpha \cdot J_A(s_i, s_j) + \beta \cdot J_L(s_i, s_j) + \gamma \cdot \frac{1}{1 + \bar{c}(s_i, s_j)}
-\label{eq:sig}
+  w(s_i, s_j) = \alpha \cdot J_A(s_i, s_j)
+              + \beta  \cdot J_L(s_i, s_j)
+              + \gamma \cdot \frac{1}{1 + \bar{c}(s_i, s_j)}
+  \label{eq:sig}
 \end{equation}
-where $J_A$, $J_L$ are Jaccard similarities over actor and location sets, $\bar{c}$ is the average composite transfer cost, and $\alpha{=}0.5$, $\beta{=}0.3$, $\gamma{=}0.2$.
-Co-scheduling group members receive edge weight~1 to ensure they share a block.
-Louvain community detection on the SIG partitions scenes into shooting blocks $B_1, \ldots, B_K$, reducing the search space from $n!$ to $K!$.
+where $J_A$, $J_L$ are Jaccard similarities of actor and location sets, $\bar{c}(s_i,s_j)$ is the average composite transfer cost, and $(\alpha,\beta,\gamma)=(0.5,0.3,0.2)$.
+Scenes in the same mandatory co-scheduling group $G_k \in \mathcal{G}$ receive edge weight~1, ensuring they land in the same block.
+Louvain community detection~\citep{blondel2008} on the SIG partitions $\mathcal{S}$ into shooting blocks $B_1,\ldots,B_K$, reducing the search space from $n!$ scene permutations to $K!$ block permutations.
 
 \subsection{Bi-Level Matheuristic and Q-Learning AOS}
+\label{sec:bilevel}
 
-\textbf{Upper level:} NSGA-II (population~20, generations~40) evolves permutations of block indices $\pi = (\pi_1, \ldots, \pi_K)$; non-dominated sorting and crowding distance maintain Pareto diversity.
-\textbf{Lower level:} Given $\pi$, scenes are concatenated in block order; a greedy decoder assigns them to days, enforcing all C1--C19 constraints with days shared across blocks to avoid per-block cost overhead.
-Each permutation evaluates to a $(f_1, f_2)$ vector.
+\textbf{Upper level.}
+NSGA-II~\citep{deb2002} (population $N{=}20$, generations $G{=}40$) evolves permutations of block indices $\pi = (\pi_1, \ldots, \pi_K)$.
+Non-dominated sorting and crowding distance maintain Pareto diversity.
 
-\textbf{Q-learning AOS:} State = 81 discretized states from (generation progress, diversity, HV improvement rate, quality gap).
-Action = one of 9 (crossover, mutation) pairs: $\{$PMX, OX, LAX$\} \times \{$swap, block-swap, ACM$\}$.
-Reward = $\Delta\text{HV}$; Q-table updated online ($\eta{=}0.1$, $\gamma{=}0.9$).
+\textbf{Lower level (global greedy reassembly).}
+Given $\pi$, scenes are concatenated in block order; a greedy decoder assigns them to shooting days in that order, enforcing all C1--C19 constraints.
+Days are shared across blocks, avoiding per-block cost overhead.
+Each $\pi$ evaluates to an objective vector $(f_1, f_2)$.
+
+\textbf{Q-learning AOS.}
+State: 81 discretised states from four features (generation progress, population diversity, HV improvement rate, quality gap).
+Action: one of 9 (crossover, mutation) operator pairs: $\{$PMX, OX, LAX$\} \times \{$swap, block-swap, ACM$\}$.
+Reward: $\Delta\mathrm{HV}$ after applying the action.
+The Q-table is updated online with learning rate $\eta{=}0.1$ and discount $\gamma_Q{=}0.9$.
 
 \begin{algorithm}[t]
-\caption{BDM-AOS (Bi-Level Decomposition Matheuristic with AOS)}
-\label{alg:bdm_aos}
-\small
+\caption{BDM-AOS: Bi-Level Decomposition Matheuristic with Adaptive Operator Selection}
+\label{alg:bdmaos}
 \begin{algorithmic}[1]
-\REQUIRE MSSP instance, $(N, G, p_c, p_m)$
-\STATE Build SIG via Eq.~(\ref{eq:sig}); $\{B_k\} \leftarrow$ Louvain(SIG)
-\STATE Init population $P$ (random block permutations); evaluate via greedy decoder
-\FOR{$g = 1$ to $G$}
-    \STATE $(cx, mut) \leftarrow$ Q-learning AOS.select(state)
-    \STATE Offspring $\leftarrow$ $cx$(parents) $\cup$ $mut$(parents); evaluate
-    \STATE $P \leftarrow$ NSGA-II-select$(P \cup \text{offspring})$; AOS.update($\Delta\text{HV}$)
+\REQUIRE MSSP instance; parameters $N$ (population), $G$ (generations), $p_c$, $p_m$
+\ENSURE Approximated Pareto front of schedules
+\STATE Build SIG via Eq.~\eqref{eq:sig}; $\{B_1,\ldots,B_K\} \leftarrow \mathrm{Louvain(SIG)}$
+\STATE Initialise population $P = \{\pi^{(1)},\ldots,\pi^{(N)}\}$ with random block permutations
+\STATE Evaluate each $\pi^{(i)}$ via greedy reassembly enforcing C1--C19
+\FOR{$g = 1,\ldots,G$}
+  \STATE $(cx, mut) \leftarrow \mathrm{AOS.select}(\mathrm{state})$ \hfill\COMMENT{Q-learning}
+  \STATE $Q \leftarrow cx\text{-crossover}(P) \cup mut\text{-mutation}(P)$; evaluate $Q$
+  \STATE $P \leftarrow \mathrm{NSGA\text{-}II\text{-}select}(P \cup Q)$
+  \STATE $\mathrm{AOS.update}(\text{reward} = \Delta\mathrm{HV})$
 \ENDFOR
-\RETURN Non-dominated front from $P$
+\RETURN Non-dominated solutions from $P$
 \end{algorithmic}
 \end{algorithm}

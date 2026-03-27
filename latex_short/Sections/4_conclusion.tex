@@ -1,0 +1,10 @@
+\section{Conclusion}
+\label{sec:conclusion}
+
+We presented BDM-AOS, the first decomposition-based multi-objective matheuristic for the Movie Scene Scheduling Problem.
+Its Scene Interaction Graph reduces the search space from $n!$ to $K!$ by grouping structurally coupled scenes; NSGA-II evolves block permutations while a global greedy decoder enforces all 19 constraint families; Q-learning AOS adapts operator selection online.
+BDM-AOS underperforms flat metaheuristics on small instances ($\leq 30$ scenes) but achieves 20.7\% and 14.5\% lower cost than GA at 75 and 100 scenes respectively, with a $5.5\times$ runtime speedup---demonstrating that structure-aware decomposition is the appropriate paradigm for production-scale MSSP.
+
+\paragraph{Future work.}
+Key directions include: real-world validation on film scripts with complex actor--location constraints; adaptive re-clustering of the SIG during search; alternative decoders producing genuine cost--makespan Pareto trade-offs; and deep RL for finer-grained operator selection.
+Code and data: \url{https://github.com/VJlaxmi/movie-scheduling-paper}.

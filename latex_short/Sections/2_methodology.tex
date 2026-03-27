@@ -1,0 +1,71 @@
+\section{Methodology}
+\label{sec:methodology}
+
+\subsection{Problem Formulation}
+\label{sec:formulation}
+
+\paragraph{Sets and parameters.}
+Let $\mathcal{S}$, $\mathcal{A}$, $\mathcal{D}$, $\mathcal{C}$, $\mathcal{I}$, $\mathcal{L}$, $\mathcal{E}$, $\mathcal{G}$ denote scenes, actors, days, cities, towns, locations, equipment types, and mandatory co-scheduling groups.
+Mappings $\phi: \mathcal{L} \to \mathcal{I}$ and $\psi: \mathcal{I} \to \mathcal{C}$ encode the geographic hierarchy.
+Each scene $s$ has duration $\delta_s$, required actors $A(s)$, compatible locations $L(s)$, and optional time window and deadline penalty.
+Each actor $a$ has wage $w_a$, availability calendar, consecutive-day limit $\bar{h}_a$, booking window, and holding fee $h_a$.
+
+\paragraph{Decision variables.}
+Seven binary variable families: $x_{s,d}$ (scene--day), $y_{s,l}$ (scene--location), $v_{a,s,d}$ (actor participation), $z_{l,s,d}$ (location--scene--day), $u_{i,d}$ (active town), $\phi_{a,d}$ (idle booked day), $w_{a,d}$ (working-day indicator).
+
+\paragraph{Bi-objective formulation.}
+We minimize cost $f_1$ and makespan $f_2$ simultaneously:
+\begin{align}
+f_1 &= \textstyle\sum_a w_a |\{d : \sum_s v_{a,s,d} \geq 1\}| + \sum_{d,l \neq l'} c_{l,l'} \sigma_{l,l',d} + \sum_s \rho_s \max(0, \text{day}(s) - \bar{d}_s) + \sum_{l,s,d} \tfrac{z_{l,s,d}}{\kappa^L_l} + \sum_{a,s,d} \tfrac{v_{a,s,d}}{\kappa^A_a} + \sum_a h_a \textstyle\sum_d \phi_{a,d} \label{eq:cost}\\
+f_2 &= \max_s \textstyle\sum_d d \cdot x_{s,d} - \min_s \textstyle\sum_d d \cdot x_{s,d} + 1 \label{eq:makespan}
+\end{align}
+$f_1$ sums: actor wages, hierarchical transfer costs $c_{l,l'}$ (intra-town / inter-town / inter-city by tier), deadline penalties, criticality-weighted utilization, and actor holding fees.
+$f_2$ is production makespan.
+
+\paragraph{19 constraint families.}
+\textbf{C1--C4}~assignment (scene scheduled once, one location, precedence, time windows);
+\textbf{C5--C7}~capacity and availability (daily hour cap, actor/location calendars);
+\textbf{C8--C9}~variable linking ($v_{a,s,d}$, $z_{l,s,d}$, $w_{a,d}$);
+\textbf{C10--C13}~geographic logistics (location--town consistency; at most one active town/day; no overnight town switches; rolling labor limits);
+\textbf{C14}~equipment supply per day;
+\textbf{C15}~actor booking/holding fees;
+\textbf{C16--C17}~mandatory co-scheduling groups and minimum scene separation;
+\textbf{C18--C19}~location concurrency and lead-actor rest periods.
+
+\subsection{Scene Interaction Graph (SIG)}
+
+We define an undirected weighted graph $G = (\mathcal{S}, E, w)$:
+\begin{equation}
+w(s_i, s_j) = \alpha \cdot J_A(s_i, s_j) + \beta \cdot J_L(s_i, s_j) + \gamma \cdot \frac{1}{1 + \bar{c}(s_i, s_j)}
+\label{eq:sig}
+\end{equation}
+where $J_A$, $J_L$ are Jaccard similarities over actor and location sets, $\bar{c}$ is the average composite transfer cost, and $\alpha{=}0.5$, $\beta{=}0.3$, $\gamma{=}0.2$.
+Co-scheduling group members receive edge weight~1 to ensure they share a block.
+Louvain community detection on the SIG partitions scenes into shooting blocks $B_1, \ldots, B_K$, reducing the search space from $n!$ to $K!$.
+
+\subsection{Bi-Level Matheuristic and Q-Learning AOS}
+
+\textbf{Upper level:} NSGA-II (population~20, generations~40) evolves permutations of block indices $\pi = (\pi_1, \ldots, \pi_K)$; non-dominated sorting and crowding distance maintain Pareto diversity.
+\textbf{Lower level:} Given $\pi$, scenes are concatenated in block order; a greedy decoder assigns them to days, enforcing all C1--C19 constraints with days shared across blocks to avoid per-block cost overhead.
+Each permutation evaluates to a $(f_1, f_2)$ vector.
+
+\textbf{Q-learning AOS:} State = 81 discretized states from (generation progress, diversity, HV improvement rate, quality gap).
+Action = one of 9 (crossover, mutation) pairs: $\{$PMX, OX, LAX$\} \times \{$swap, block-swap, ACM$\}$.
+Reward = $\Delta\text{HV}$; Q-table updated online ($\eta{=}0.1$, $\gamma{=}0.9$).
+
+\begin{algorithm}[t]
+\caption{BDM-AOS (Bi-Level Decomposition Matheuristic with AOS)}
+\label{alg:bdm_aos}
+\small
+\begin{algorithmic}[1]
+\REQUIRE MSSP instance, $(N, G, p_c, p_m)$
+\STATE Build SIG via Eq.~(\ref{eq:sig}); $\{B_k\} \leftarrow$ Louvain(SIG)
+\STATE Init population $P$ (random block permutations); evaluate via greedy decoder
+\FOR{$g = 1$ to $G$}
+    \STATE $(cx, mut) \leftarrow$ Q-learning AOS.select(state)
+    \STATE Offspring $\leftarrow$ $cx$(parents) $\cup$ $mut$(parents); evaluate
+    \STATE $P \leftarrow$ NSGA-II-select$(P \cup \text{offspring})$; AOS.update($\Delta\text{HV}$)
+\ENDFOR
+\RETURN Non-dominated front from $P$
+\end{algorithmic}
+\end{algorithm}

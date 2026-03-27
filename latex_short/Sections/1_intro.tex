@@ -1,0 +1,17 @@
+\section{Introduction}
+\label{sec:intro}
+
+Film production scheduling determines the sequence and day assignments of scenes to minimize actor wages, location transfer costs, deadline penalties, and holding fees, subject to actor availability, a three-tier geographic hierarchy (city--town--location), crew travel logistics, equipment sharing, labor regulations, and mandatory scene coordination constraints.
+The MSSP is NP-hard~\citep{brucker1999}, and real schedules exhibit natural \emph{shooting blocks}---groups of scenes sharing actors or co-located sets---that existing methods do not exploit.
+
+\paragraph{Prior work.}
+MILP-based exact methods~\citep{liu2019,tekin2023} solve instances up to 15--25 scenes before exceeding practical time limits; their flat location models omit geographic hierarchy, equipment sharing, booking fees, co-scheduling, and lead-actor rest constraints present in real production contracts~\citep{bomsdorf2008}.
+Standalone metaheuristics (Tabu Search, PSO, ACO)~\citep{liu2019,long2020,tekin2023} scale better but operate on unstructured scene permutations, apply single-objective optimization, and lack adaptive operator control.
+No prior work applies decomposition, multi-objective optimization, or adaptive operator selection to the MSSP.
+
+\paragraph{Contributions.}
+We propose \textbf{BDM-AOS}:
+(1)~a \textbf{comprehensive MILP formulation} with 19 constraint families over a three-tier geographic hierarchy, extending prior work with equipment sharing, actor booking/holding fees, mandatory co-scheduling, scene separation, location concurrency, and lead-actor rest;
+(2)~a \textbf{Scene Interaction Graph (SIG)} whose edge weights encode actor-sharing, location-sharing, and transfer-cost coupling---Louvain community detection partitions scenes into shooting blocks, reducing search from $n!$ to $K!$;
+(3)~a \textbf{bi-level framework} where NSGA-II evolves block permutations and a global greedy decoder enforces all 19 constraints---the first decomposition-based approach for the MSSP;
+(4)~\textbf{Q-learning AOS} with two novel operators: \emph{Location-Aware Crossover} (LAX) and \emph{Actor-Continuity Mutation} (ACM).

@@ -1,0 +1,10 @@
+\begin{abstract}
+The Movie Scene Scheduling Problem (MSSP) minimizes total production cost and makespan subject to actor availability, a three-tier geographic hierarchy, and 19 operational constraint families---substantially extending prior flat-location formulations.
+Exact MILP methods become intractable beyond 20 scenes; existing metaheuristics ignore exploitable scene-coupling structure.
+We propose \textbf{BDM-AOS}, a Bi-level Decomposition Matheuristic with Adaptive Operator Selection, which:
+(i)~builds a \emph{Scene Interaction Graph} (SIG) capturing actor/location sharing and transfer-cost coupling, decomposing scenes into shooting blocks via Louvain community detection;
+(ii)~evolves block permutations with NSGA-II while a global greedy decoder enforces all 19 constraints;
+(iii)~applies Q-learning to adapt among nine crossover--mutation combinations, including two novel problem-specific operators.
+Experiments on 8 instance sizes (10--100 scenes, 30 seeds each) reveal a scalability crossover: BDM-AOS achieves \textbf{20.7\%} lower cost than GA and \textbf{19.0\%} lower than PSO on 75-scene instances with a \textbf{5.6$\times$} runtime speedup, and maintains a \textbf{14.5\%} cost advantage at 100 scenes.
+A five-variant ablation confirms SIG decomposition as the dominant contributor (33--64\% degradation without it).
+\end{abstract}
